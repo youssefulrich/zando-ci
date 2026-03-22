@@ -13,17 +13,8 @@ const PAYMENT_METHODS = [
   { value: 'moov_money', label: 'Moov Money', color: '#22d3a5', bg: 'rgba(34,211,165,0.1)', border: 'rgba(34,211,165,0.25)' },
 ]
 
-const TYPE_ICONS: Record<string, string> = {
-  residence: '⌂',
-  vehicle: '◈',
-  event: '◉',
-}
-
-const TYPE_LABELS: Record<string, string> = {
-  residence: 'Résidence',
-  vehicle: 'Véhicule',
-  event: 'Événement',
-}
+const TYPE_ICONS: Record<string, string> = { residence: '⌂', vehicle: '◈', event: '◉' }
+const TYPE_LABELS: Record<string, string> = { residence: 'Résidence', vehicle: 'Véhicule', event: 'Événement' }
 
 function CheckoutForm() {
   const searchParams = useSearchParams()
@@ -35,8 +26,6 @@ function CheckoutForm() {
   const endDate = searchParams.get('end_date') ?? ''
   const ticketsCount = Number(searchParams.get('tickets_count') ?? 1)
   const total = Number(searchParams.get('total') ?? 0)
-  const commission = Math.round(total * 0.1)
-  const ownerAmount = total - commission
 
   const [profile, setProfile] = useState<{ full_name: string; phone: string } | null>(null)
   const [paymentMethod, setPaymentMethod] = useState('orange_money')
@@ -51,8 +40,9 @@ function CheckoutForm() {
       if (!user) { router.push('/login'); return }
       const { data } = await supabase.from('profiles').select('full_name, phone').eq('id', user.id).single()
       if (data) {
-        setProfile(data as { full_name: string; phone: string })
-        setMobilePhone(data.phone ?? '')
+        const p = data as unknown as { full_name: string; phone: string }
+        setProfile(p)
+        setMobilePhone(p.phone ?? '')
       }
     })
   }, [router])
@@ -89,14 +79,9 @@ function CheckoutForm() {
       <Navbar />
       <div style={{ maxWidth: 680, margin: '0 auto', padding: '48px 24px' }}>
 
-        {/* Header */}
         <div style={{ marginBottom: 36 }}>
-          <div style={{ fontSize: 11, color: '#22d3a5', textTransform: 'uppercase', letterSpacing: 2, fontWeight: 600, marginBottom: 8 }}>
-            Paiement sécurisé
-          </div>
-          <h1 style={{ fontSize: 28, fontWeight: 800, color: '#fff', letterSpacing: -0.8 }}>
-            Finaliser la réservation
-          </h1>
+          <div style={{ fontSize: 11, color: '#22d3a5', textTransform: 'uppercase', letterSpacing: 2, fontWeight: 600, marginBottom: 8 }}>Paiement sécurisé</div>
+          <h1 style={{ fontSize: 28, fontWeight: 800, color: '#fff', letterSpacing: -0.8 }}>Finaliser la réservation</h1>
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -104,12 +89,7 @@ function CheckoutForm() {
           {/* Récapitulatif */}
           <div style={{ background: '#111827', border: '0.5px solid rgba(255,255,255,0.08)', borderRadius: 16, padding: 24 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 20 }}>
-              <div style={{
-                width: 44, height: 44, borderRadius: 12,
-                background: 'rgba(34,211,165,0.1)', border: '0.5px solid rgba(34,211,165,0.2)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 20, color: '#22d3a5',
-              }}>
+              <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(34,211,165,0.1)', border: '0.5px solid rgba(34,211,165,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, color: '#22d3a5' }}>
                 {TYPE_ICONS[itemType] ?? '◈'}
               </div>
               <div>
@@ -117,7 +97,6 @@ function CheckoutForm() {
                 <p style={{ fontSize: 15, fontWeight: 700, color: '#fff' }}>{TYPE_LABELS[itemType] ?? itemType}</p>
               </div>
             </div>
-
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {startDate && endDate && (
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -156,63 +135,44 @@ function CheckoutForm() {
 
           {/* Méthode de paiement */}
           <div style={{ background: '#111827', border: '0.5px solid rgba(255,255,255,0.08)', borderRadius: 16, padding: 24 }}>
-            <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 16 }}>
-              Choisir le moyen de paiement
-            </p>
+            <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 16 }}>Choisir le moyen de paiement</p>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 20 }}>
               {PAYMENT_METHODS.map(m => (
-                <button
-                  key={m.value}
-                  onClick={() => setPaymentMethod(m.value)}
-                  style={{
-                    padding: '14px 16px', borderRadius: 12, cursor: 'pointer',
-                    border: paymentMethod === m.value ? `1.5px solid ${m.border}` : '0.5px solid rgba(255,255,255,0.08)',
-                    background: paymentMethod === m.value ? m.bg : 'rgba(255,255,255,0.03)',
-                    color: paymentMethod === m.value ? m.color : 'rgba(255,255,255,0.45)',
-                    fontSize: 13, fontWeight: paymentMethod === m.value ? 700 : 500,
-                    transition: 'all 0.15s ease', textAlign: 'left',
-                  }}>
-                  <div style={{
-                    width: 8, height: 8, borderRadius: '50%',
-                    background: paymentMethod === m.value ? m.color : 'rgba(255,255,255,0.15)',
-                    display: 'inline-block', marginRight: 8, verticalAlign: 'middle',
-                  }} />
+                <button key={m.value} onClick={() => setPaymentMethod(m.value)} style={{
+                  padding: '14px 16px', borderRadius: 12, cursor: 'pointer',
+                  border: paymentMethod === m.value ? `1.5px solid ${m.border}` : '0.5px solid rgba(255,255,255,0.08)',
+                  background: paymentMethod === m.value ? m.bg : 'rgba(255,255,255,0.03)',
+                  color: paymentMethod === m.value ? m.color : 'rgba(255,255,255,0.45)',
+                  fontSize: 13, fontWeight: paymentMethod === m.value ? 700 : 500,
+                  transition: 'all 0.15s ease', textAlign: 'left',
+                }}>
+                  <div style={{ width: 8, height: 8, borderRadius: '50%', background: paymentMethod === m.value ? m.color : 'rgba(255,255,255,0.15)', display: 'inline-block', marginRight: 8, verticalAlign: 'middle' }} />
                   {m.label}
                 </button>
               ))}
             </div>
-
             <div>
               <label style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: 1, display: 'block', marginBottom: 10 }}>
                 Numéro {selectedMethod.label}
               </label>
-              <input
-                type="tel"
-                value={mobilePhone}
-                onChange={e => setMobilePhone(e.target.value)}
-                placeholder="+225 07 00 00 00 00"
-                style={{
-                  width: '100%', padding: '14px 16px',
-                  background: 'rgba(255,255,255,0.04)',
-                  border: `0.5px solid ${selectedMethod.border}`,
-                  borderRadius: 12, fontSize: 14, color: '#fff',
-                  outline: 'none', colorScheme: 'dark',
-                }}
-              />
+              <input type="tel" value={mobilePhone} onChange={e => setMobilePhone(e.target.value)} placeholder="+225 07 00 00 00 00" style={{
+                width: '100%', padding: '14px 16px',
+                background: 'rgba(255,255,255,0.04)', border: `0.5px solid ${selectedMethod.border}`,
+                borderRadius: 12, fontSize: 14, color: '#fff', outline: 'none', colorScheme: 'dark' as const,
+                boxSizing: 'border-box',
+              }} />
             </div>
           </div>
 
           {/* CGV */}
           <label style={{ display: 'flex', alignItems: 'flex-start', gap: 12, cursor: 'pointer', padding: '4px 0' }}>
-            <div
-              onClick={() => setCgv(!cgv)}
-              style={{
-                width: 20, height: 20, borderRadius: 6, flexShrink: 0, marginTop: 1,
-                border: cgv ? 'none' : '0.5px solid rgba(255,255,255,0.2)',
-                background: cgv ? '#22d3a5' : 'rgba(255,255,255,0.05)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                cursor: 'pointer', transition: 'all 0.15s ease',
-              }}>
+            <div onClick={() => setCgv(!cgv)} style={{
+              width: 20, height: 20, borderRadius: 6, flexShrink: 0, marginTop: 1,
+              border: cgv ? 'none' : '0.5px solid rgba(255,255,255,0.2)',
+              background: cgv ? '#22d3a5' : 'rgba(255,255,255,0.05)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              cursor: 'pointer', transition: 'all 0.15s ease',
+            }}>
               {cgv && <span style={{ fontSize: 11, color: '#0a1a14', fontWeight: 800 }}>✓</span>}
             </div>
             <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', lineHeight: 1.6 }}>
@@ -220,31 +180,22 @@ function CheckoutForm() {
             </span>
           </label>
 
-          {/* Erreur */}
           {error && (
-            <div style={{
-              background: 'rgba(248,113,113,0.08)', border: '0.5px solid rgba(248,113,113,0.2)',
-              borderRadius: 12, padding: '12px 16px',
-            }}>
+            <div style={{ background: 'rgba(248,113,113,0.08)', border: '0.5px solid rgba(248,113,113,0.2)', borderRadius: 12, padding: '12px 16px' }}>
               <p style={{ fontSize: 13, color: '#f87171' }}>{error}</p>
             </div>
           )}
 
-          {/* Bouton payer */}
-          <button
-            onClick={handlePay}
-            disabled={loading}
-            style={{
-              width: '100%', padding: '16px',
-              background: loading ? 'rgba(34,211,165,0.4)' : '#22d3a5',
-              color: '#0a1a14', borderRadius: 14, border: 'none',
-              fontSize: 15, fontWeight: 800, cursor: loading ? 'not-allowed' : 'pointer',
-              letterSpacing: -0.3, transition: 'all 0.15s ease',
-            }}>
+          <button onClick={handlePay} disabled={loading} style={{
+            width: '100%', padding: '16px',
+            background: loading ? 'rgba(34,211,165,0.4)' : '#22d3a5',
+            color: '#0a1a14', borderRadius: 14, border: 'none',
+            fontSize: 15, fontWeight: 800, cursor: loading ? 'not-allowed' : 'pointer',
+            letterSpacing: -0.3, transition: 'all 0.15s ease',
+          }}>
             {loading ? 'Redirection vers Genius Pay...' : `Payer ${formatPrice(total)}`}
           </button>
 
-          {/* Sécurité */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
             <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.2)' }}>🔒</span>
             <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.2)' }}>Paiement sécurisé via Genius Pay</span>
