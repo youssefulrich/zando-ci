@@ -15,21 +15,23 @@ export default async function AdminPage() {
 
   if (!profile?.is_admin) redirect('/dashboard')
 
-  const { data: allBookings } = await supabase
+  const { data: allBookingsRaw } = await supabase
     .from('bookings')
     .select('*, payments(status, payment_method, completed_at)')
     .order('created_at', { ascending: false })
+  const allBookings = allBookingsRaw as any[] | null
 
-  const { data: allProfiles } = await supabase
+  const { data: allProfilesRaw } = await supabase
     .from('profiles').select('*').order('created_at', { ascending: false })
+  const allProfiles = allProfilesRaw as any[] | null
 
   const [
     { count: resCount },
     { count: vehCount },
     { count: evtCount },
-    { data: pendingResidences },
-    { data: pendingVehicles },
-    { data: pendingEvents },
+    { data: pendingResidencesRaw },
+    { data: pendingVehiclesRaw },
+    { data: pendingEventsRaw },
   ] = await Promise.all([
     supabase.from('residences').select('*', { count: 'exact', head: true }),
     supabase.from('vehicles').select('*', { count: 'exact', head: true }),
@@ -39,28 +41,32 @@ export default async function AdminPage() {
     supabase.from('events').select('*, profiles(full_name, phone)').eq('status', 'pending').order('created_at', { ascending: false }),
   ])
 
-  const confirmed = allBookings?.filter(b => b.status === 'confirmed') ?? []
-  const totalBrut = confirmed.reduce((s, b) => s + b.total_price, 0)
-  const totalCommission = confirmed.reduce((s, b) => s + (b.commission_amount || Math.round(b.total_price * 0.1)), 0)
-  const totalOwner = confirmed.reduce((s, b) => s + (b.owner_amount || Math.round(b.total_price * 0.9)), 0)
+  const pendingResidences = pendingResidencesRaw as any[] | null
+  const pendingVehicles = pendingVehiclesRaw as any[] | null
+  const pendingEvents = pendingEventsRaw as any[] | null
+
+  const confirmed = allBookings?.filter((b: any) => b.status === 'confirmed') ?? []
+  const totalBrut = confirmed.reduce((s: number, b: any) => s + b.total_price, 0)
+  const totalCommission = confirmed.reduce((s: number, b: any) => s + (b.commission_amount || Math.round(b.total_price * 0.1)), 0)
+  const totalOwner = confirmed.reduce((s: number, b: any) => s + (b.owner_amount || Math.round(b.total_price * 0.9)), 0)
 
   const byStatus = {
-    pending: allBookings?.filter(b => b.status === 'pending').length ?? 0,
-    confirmed: allBookings?.filter(b => b.status === 'confirmed').length ?? 0,
-    cancelled: allBookings?.filter(b => b.status === 'cancelled').length ?? 0,
+    pending: allBookings?.filter((b: any) => b.status === 'pending').length ?? 0,
+    confirmed: allBookings?.filter((b: any) => b.status === 'confirmed').length ?? 0,
+    cancelled: allBookings?.filter((b: any) => b.status === 'cancelled').length ?? 0,
   }
 
   const byType = {
-    residence: allBookings?.filter(b => b.item_type === 'residence').length ?? 0,
-    vehicle: allBookings?.filter(b => b.item_type === 'vehicle').length ?? 0,
-    event: allBookings?.filter(b => b.item_type === 'event').length ?? 0,
+    residence: allBookings?.filter((b: any) => b.item_type === 'residence').length ?? 0,
+    vehicle: allBookings?.filter((b: any) => b.item_type === 'vehicle').length ?? 0,
+    event: allBookings?.filter((b: any) => b.item_type === 'event').length ?? 0,
   }
 
   const usersByType = {
-    client: allProfiles?.filter(p => p.account_type === 'client').length ?? 0,
-    owner_residence: allProfiles?.filter(p => p.account_type === 'owner_residence').length ?? 0,
-    owner_vehicle: allProfiles?.filter(p => p.account_type === 'owner_vehicle').length ?? 0,
-    owner_event: allProfiles?.filter(p => p.account_type === 'owner_event').length ?? 0,
+    client: allProfiles?.filter((p: any) => p.account_type === 'client').length ?? 0,
+    owner_residence: allProfiles?.filter((p: any) => p.account_type === 'owner_residence').length ?? 0,
+    owner_vehicle: allProfiles?.filter((p: any) => p.account_type === 'owner_vehicle').length ?? 0,
+    owner_event: allProfiles?.filter((p: any) => p.account_type === 'owner_event').length ?? 0,
   }
 
   const totalPending = (pendingResidences?.length ?? 0) + (pendingVehicles?.length ?? 0) + (pendingEvents?.length ?? 0)
@@ -238,10 +244,10 @@ export default async function AdminPage() {
                 </tr>
               </thead>
               <tbody>
-                {allBookings?.slice(0, 25).map((b, i) => {
+                {allBookings?.slice(0, 25).map((b: any, i: number) => {
                   const commission = b.commission_amount || Math.round(b.total_price * 0.1)
                   const ownerAmt = b.owner_amount || Math.round(b.total_price * 0.9)
-                  const payMethod = (b.payments as { payment_method?: string } | null)?.payment_method?.replace(/_/g, ' ') ?? '—'
+                  const payMethod = b.payments?.payment_method?.replace(/_/g, ' ') ?? '—'
                   return (
                     <tr key={b.id} style={{ borderBottom: '0.5px solid rgba(255,255,255,0.04)' }}>
                       <td style={{ padding: '12px 16px 12px 0', fontSize: 11, fontFamily: 'monospace', color: 'rgba(255,255,255,0.35)', whiteSpace: 'nowrap' }}>{b.reference}</td>
@@ -278,7 +284,7 @@ export default async function AdminPage() {
             <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', background: 'rgba(255,255,255,0.05)', padding: '3px 10px', borderRadius: 20 }}>{allProfiles?.length ?? 0}</span>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
-            {allProfiles?.slice(0, 12).map(p => {
+            {allProfiles?.slice(0, 12).map((p: any) => {
               const utColors: Record<string, string> = { client: '#22d3a5', owner_residence: '#60a5fa', owner_vehicle: '#a78bfa', owner_event: '#fbbf24' }
               const utLabels: Record<string, string> = { client: 'Client', owner_residence: 'Propriétaire', owner_vehicle: 'Loueur', owner_event: 'Organisateur' }
               const col = utColors[p.account_type] ?? '#fff'
