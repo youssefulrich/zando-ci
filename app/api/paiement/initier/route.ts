@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 
-// Commission Zando CI : 10% sur chaque transaction
 const COMMISSION_RATE = 0.10
 
 export async function POST(req: NextRequest) {
@@ -14,29 +13,30 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     const { itemType, itemId, startDate, endDate, ticketsCount, total, paymentMethod, mobilePhone } = body
 
-    const { data: profile } = await supabase
+    const { data: profileRaw } = await supabase
       .from('profiles')
       .select('full_name, phone')
       .eq('id', user.id)
       .single()
+    const profile = profileRaw as { full_name: string; phone: string } | null
 
     if (!profile) return NextResponse.json({ error: 'Profil introuvable' }, { status: 400 })
 
     const admin = createAdminClient()
 
-    // Calcul de la commission
     const commissionAmount = Math.round(total * COMMISSION_RATE)
     const ownerAmount = total - commissionAmount
 
     // Vérifier disponibilité résidences/véhicules
     if (itemType === 'residence' || itemType === 'vehicle') {
-      const { data: conflict } = await admin
+      const { data: conflictRaw } = await admin
         .from('bookings')
         .select('id')
         .eq('item_id', itemId)
         .in('status', ['pending', 'confirmed'])
         .or(`and(start_date.lte.${endDate},end_date.gte.${startDate})`)
         .limit(1)
+      const conflict = conflictRaw as any[] | null
 
       if (conflict && conflict.length > 0) {
         return NextResponse.json({ error: 'Ces dates ne sont plus disponibles' }, { status: 409 })
@@ -45,11 +45,12 @@ export async function POST(req: NextRequest) {
 
     // Vérifier stock événements
     if (itemType === 'event') {
-      const { data: event } = await admin
+      const { data: eventRaw } = await admin
         .from('events')
         .select('total_capacity, tickets_sold')
         .eq('id', itemId)
         .single()
+      const event = eventRaw as { total_capacity: number; tickets_sold: number } | null
 
       if (!event) return NextResponse.json({ error: 'Événement introuvable' }, { status: 404 })
       if (event.total_capacity - event.tickets_sold < ticketsCount) {
@@ -57,8 +58,8 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Créer la réservation avec les infos de commission
-    const { data: booking, error: bookingError } = await admin
+    // Créer la réservation
+    const { data: bookingRaw, error: bookingError } = await admin
       .from('bookings')
       .insert({
         user_id: user.id,
@@ -77,6 +78,7 @@ export async function POST(req: NextRequest) {
       })
       .select()
       .single()
+    const booking = bookingRaw as any
 
     if (bookingError || !booking) {
       console.error('Erreur création réservation:', bookingError)
@@ -104,7 +106,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ reference: booking.reference })
     }
 
-    // Appeler Genius Pay — mode checkout (client choisit son moyen de paiement)
     const geniusRes = await fetch('https://pay.genius.ci/api/v1/merchant/payments', {
       method: 'POST',
       headers: {
@@ -138,9 +139,7 @@ export async function POST(req: NextRequest) {
       console.error('Genius Pay error:', geniusData)
       await admin.from('bookings').update({ status: 'cancelled' }).eq('id', booking.id)
       await admin.from('payments').update({ status: 'failed' }).eq('booking_id', booking.id)
-      return NextResponse.json({
-        error: geniusData.message || 'Erreur Genius Pay',
-      }, { status: 400 })
+      return NextResponse.json({ error: geniusData.message || 'Erreur Genius Pay' }, { status: 400 })
     }
 
     const redirectUrl = geniusData.data?.checkout_url || geniusData.data?.payment_url
@@ -155,11 +154,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       payment_url: redirectUrl,
       reference: booking.reference,
-      breakdown: {
-        total,
-        commission: commissionAmount,
-        owner_receives: ownerAmount,
-      }
+      breakdown: { total, commission: commissionAmount, owner_receives: ownerAmount }
     })
 
   } catch (err) {
