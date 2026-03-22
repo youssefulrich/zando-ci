@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
     const payload = JSON.parse(body)
     console.log('Webhook reçu:', eventType || payload.event, deliveryId)
 
-    const admin = createAdminClient()
+    const admin = createAdminClient() as any
 
     // ID de transaction Genius Pay
     const geniusPayId = String(payload.data?.id ?? '')

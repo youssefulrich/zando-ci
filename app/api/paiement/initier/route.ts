@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
 
     if (!profile) return NextResponse.json({ error: 'Profil introuvable' }, { status: 400 })
 
-    const admin = createAdminClient()
+    const admin = createAdminClient() as any
 
     const commissionAmount = Math.round(total * COMMISSION_RATE)
     const ownerAmount = total - commissionAmount
