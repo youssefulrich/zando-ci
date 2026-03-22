@@ -37,7 +37,7 @@ export default function CalendrierDisponibilites({ itemId, itemType, ownerId, re
 
   async function loadBlockedDates() {
     setLoading(true)
-    const supabase = createClient()
+    const supabase = createClient() as any as any
     const { data } = await supabase
       .from('blocked_dates')
       .select('*')
@@ -54,7 +54,7 @@ export default function CalendrierDisponibilites({ itemId, itemType, ownerId, re
 
   function getFirstDayOfMonth(year: number, month: number) {
     let day = new Date(year, month, 1).getDay()
-    return day === 0 ? 6 : day - 1 // Lundi = 0
+    return day === 0 ? 6 : day - 1
   }
 
   function formatDate(year: number, month: number, day: number): string {
@@ -95,7 +95,6 @@ export default function CalendrierDisponibilites({ itemId, itemType, ownerId, re
 
   function handleDayClick(dateStr: string) {
     if (readOnly || isPast(dateStr)) return
-
     if (!selectStart || (selectStart && selectEnd)) {
       setSelectStart(dateStr)
       setSelectEnd(null)
@@ -109,7 +108,7 @@ export default function CalendrierDisponibilites({ itemId, itemType, ownerId, re
   async function handleBlock() {
     if (!selectStart || !selectEnd) return
     setSaving(true)
-    const supabase = createClient()
+    const supabase = createClient() as any as any
     await supabase.from('blocked_dates').insert({
       item_id: itemId,
       item_type: itemType,
@@ -125,7 +124,7 @@ export default function CalendrierDisponibilites({ itemId, itemType, ownerId, re
   }
 
   async function handleUnblock(id: string) {
-    const supabase = createClient()
+    const supabase = createClient() as any as any
     await supabase.from('blocked_dates').delete().eq('id', id)
     setBlockedRanges(prev => prev.filter(r => r.id !== id))
   }
@@ -167,31 +166,18 @@ export default function CalendrierDisponibilites({ itemId, itemType, ownerId, re
         )}
       </div>
 
-      {/* Navigation mois */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-        <button onClick={prevMonth} style={{
-          width: 32, height: 32, borderRadius: 8, background: 'rgba(255,255,255,0.05)',
-          border: '1px solid rgba(255,255,255,0.08)', color: '#94a3b8', cursor: 'pointer', fontSize: 14,
-        }}>‹</button>
-        <span style={{ color: '#e2e8f0', fontWeight: 600, fontSize: 14 }}>
-          {MONTHS[currentMonth]} {currentYear}
-        </span>
-        <button onClick={nextMonth} style={{
-          width: 32, height: 32, borderRadius: 8, background: 'rgba(255,255,255,0.05)',
-          border: '1px solid rgba(255,255,255,0.08)', color: '#94a3b8', cursor: 'pointer', fontSize: 14,
-        }}>›</button>
+        <button onClick={prevMonth} style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', color: '#94a3b8', cursor: 'pointer', fontSize: 14 }}>‹</button>
+        <span style={{ color: '#e2e8f0', fontWeight: 600, fontSize: 14 }}>{MONTHS[currentMonth]} {currentYear}</span>
+        <button onClick={nextMonth} style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', color: '#94a3b8', cursor: 'pointer', fontSize: 14 }}>›</button>
       </div>
 
-      {/* Jours de la semaine */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 2, marginBottom: 4 }}>
         {DAYS.map(d => (
-          <div key={d} style={{ textAlign: 'center', fontSize: 10, color: '#475569', fontWeight: 600, padding: '4px 0', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            {d}
-          </div>
+          <div key={d} style={{ textAlign: 'center', fontSize: 10, color: '#475569', fontWeight: 600, padding: '4px 0', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{d}</div>
         ))}
       </div>
 
-      {/* Grille des jours */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 2 }}>
         {cells.map((day, idx) => {
           if (!day) return <div key={`empty-${idx}`} />
@@ -206,108 +192,57 @@ export default function CalendrierDisponibilites({ itemId, itemType, ownerId, re
           let color = '#94a3b8'
           let border = 'transparent'
 
-          if (past) {
-            color = '#1e293b'
-          } else if (blockedId) {
-            bg = 'rgba(248,113,113,0.2)'
-            color = '#f87171'
-            border = 'rgba(248,113,113,0.3)'
-          } else if (isStart || isEnd) {
-            bg = accent
-            color = '#0a0f1a'
-            border = accent
-          } else if (inSel) {
-            bg = `rgba(${accentRgb},0.15)`
-            color = accent
-            border = `rgba(${accentRgb},0.2)`
-          } else {
-            color = '#cbd5e1'
-          }
+          if (past) { color = '#1e293b' }
+          else if (blockedId) { bg = 'rgba(248,113,113,0.2)'; color = '#f87171'; border = 'rgba(248,113,113,0.3)' }
+          else if (isStart || isEnd) { bg = accent; color = '#0a0f1a'; border = accent }
+          else if (inSel) { bg = `rgba(${accentRgb},0.15)`; color = accent; border = `rgba(${accentRgb},0.2)` }
+          else { color = '#cbd5e1' }
 
           return (
-            <div
-              key={dateStr}
-              onClick={() => handleDayClick(dateStr)}
+            <div key={dateStr} onClick={() => handleDayClick(dateStr)}
               onMouseEnter={() => !readOnly && selectStart && !selectEnd && setHoveredDate(dateStr)}
               onMouseLeave={() => setHoveredDate(null)}
-              style={{
-                textAlign: 'center', padding: '7px 2px', borderRadius: 6,
-                fontSize: 12, fontWeight: inSel || blockedId ? 600 : 400,
-                background: bg, color, border: `1px solid ${border}`,
-                cursor: readOnly || past ? 'default' : 'pointer',
-                transition: 'all 0.1s',
-                userSelect: 'none',
-              }}
-            >
+              style={{ textAlign: 'center', padding: '7px 2px', borderRadius: 6, fontSize: 12, fontWeight: inSel || blockedId ? 600 : 400, background: bg, color, border: `1px solid ${border}`, cursor: readOnly || past ? 'default' : 'pointer', transition: 'all 0.1s', userSelect: 'none' }}>
               {day}
             </div>
           )
         })}
       </div>
 
-      {/* Actions de blocage */}
       {!readOnly && (
         <div style={{ marginTop: 20 }}>
           {selectStart && !selectEnd && (
-            <p style={{ fontSize: 12, color: '#64748b', marginBottom: 12, textAlign: 'center' }}>
-              Cliquez sur une date de fin pour sélectionner la période
-            </p>
+            <p style={{ fontSize: 12, color: '#64748b', marginBottom: 12, textAlign: 'center' }}>Cliquez sur une date de fin pour sélectionner la période</p>
           )}
           {selectStart && selectEnd && (
             <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-              <div style={{
-                flex: 1, background: `rgba(${accentRgb},0.08)`, border: `1px solid rgba(${accentRgb},0.2)`,
-                borderRadius: 10, padding: '10px 14px',
-              }}>
-                <span style={{ color: '#94a3b8', fontSize: 12 }}>
-                  Du <strong style={{ color: accent }}>{selectStart}</strong> au <strong style={{ color: accent }}>{selectEnd}</strong>
-                </span>
+              <div style={{ flex: 1, background: `rgba(${accentRgb},0.08)`, border: `1px solid rgba(${accentRgb},0.2)`, borderRadius: 10, padding: '10px 14px' }}>
+                <span style={{ color: '#94a3b8', fontSize: 12 }}>Du <strong style={{ color: accent }}>{selectStart}</strong> au <strong style={{ color: accent }}>{selectEnd}</strong></span>
               </div>
-              <button onClick={handleBlock} disabled={saving} style={{
-                padding: '10px 18px', borderRadius: 10, border: 'none',
-                background: saving ? 'rgba(248,113,113,0.3)' : '#f87171',
-                color: saving ? '#64748b' : '#fff', fontWeight: 600, fontSize: 13,
-                cursor: saving ? 'wait' : 'pointer',
-              }}>
+              <button onClick={handleBlock} disabled={saving} style={{ padding: '10px 18px', borderRadius: 10, border: 'none', background: saving ? 'rgba(248,113,113,0.3)' : '#f87171', color: saving ? '#64748b' : '#fff', fontWeight: 600, fontSize: 13, cursor: saving ? 'wait' : 'pointer' }}>
                 {saving ? '...' : '🔒 Bloquer'}
               </button>
-              <button onClick={() => { setSelectStart(null); setSelectEnd(null) }} style={{
-                padding: '10px 14px', borderRadius: 10,
-                border: '1px solid rgba(255,255,255,0.08)', background: 'transparent',
-                color: '#64748b', fontSize: 13, cursor: 'pointer',
-              }}>✕</button>
+              <button onClick={() => { setSelectStart(null); setSelectEnd(null) }} style={{ padding: '10px 14px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.08)', background: 'transparent', color: '#64748b', fontSize: 13, cursor: 'pointer' }}>✕</button>
             </div>
           )}
         </div>
       )}
 
-      {/* Liste des périodes bloquées */}
       {!readOnly && blockedRanges.filter(r => r.reason === 'blocked').length > 0 && (
         <div style={{ marginTop: 20, borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 16 }}>
           <p style={{ fontSize: 11, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>Périodes bloquées</p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             {blockedRanges.filter(r => r.reason === 'blocked').map(r => (
-              <div key={r.id} style={{
-                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                background: 'rgba(248,113,113,0.08)', border: '1px solid rgba(248,113,113,0.15)',
-                borderRadius: 8, padding: '8px 12px',
-              }}>
-                <span style={{ fontSize: 12, color: '#f87171' }}>
-                  {r.start_date} → {r.end_date}
-                </span>
-                <button onClick={() => handleUnblock(r.id)} style={{
-                  background: 'rgba(248,113,113,0.15)', border: '1px solid rgba(248,113,113,0.3)',
-                  borderRadius: 6, color: '#f87171', fontSize: 11, padding: '3px 10px', cursor: 'pointer',
-                }}>Débloquer</button>
+              <div key={r.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(248,113,113,0.08)', border: '1px solid rgba(248,113,113,0.15)', borderRadius: 8, padding: '8px 12px' }}>
+                <span style={{ fontSize: 12, color: '#f87171' }}>{r.start_date} → {r.end_date}</span>
+                <button onClick={() => handleUnblock(r.id)} style={{ background: 'rgba(248,113,113,0.15)', border: '1px solid rgba(248,113,113,0.3)', borderRadius: 6, color: '#f87171', fontSize: 11, padding: '3px 10px', cursor: 'pointer' }}>Débloquer</button>
               </div>
             ))}
           </div>
         </div>
       )}
 
-      {loading && (
-        <p style={{ textAlign: 'center', color: '#475569', fontSize: 12, marginTop: 12 }}>Chargement...</p>
-      )}
+      {loading && <p style={{ textAlign: 'center', color: '#475569', fontSize: 12, marginTop: 12 }}>Chargement...</p>}
     </div>
   )
 }
