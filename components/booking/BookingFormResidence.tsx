@@ -1,0 +1,232 @@
+'use client'
+
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { createClient } from '@/lib/supabase/client'
+import { formatPrice, getNights } from '@/lib/utils'
+
+const COMMISSION_RATE = 0.10
+
+type Props = {
+  residenceId: string
+  pricePerNight: number
+  pricePerWeek?: number | null
+  pricePerMonth?: number | null
+  maxGuests: number
+}
+
+export default function BookingFormResidence({
+  residenceId,
+  pricePerNight,
+  pricePerWeek,
+  pricePerMonth,
+  maxGuests,
+}: Props) {
+  const router = useRouter()
+  const [checkIn, setCheckIn] = useState('')
+  const [checkOut, setCheckOut] = useState('')
+  const [guests, setGuests] = useState(1)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+
+  const today = new Date().toISOString().split('T')[0]
+
+  function getNightsCount(): number {
+    if (!checkIn || !checkOut) return 0
+    return getNights(new Date(checkIn), new Date(checkOut))
+  }
+
+  function getPrice(): number {
+    const nights = getNightsCount()
+    if (nights <= 0) return 0
+    if (pricePerMonth && nights >= 28) return Math.round(pricePerMonth * (nights / 30))
+    if (pricePerWeek && nights >= 7) return Math.round(pricePerWeek * (nights / 7))
+    return pricePerNight * nights
+  }
+
+  function getPriceLabel(): string {
+    const nights = getNightsCount()
+    if (pricePerMonth && nights >= 28) return `${Math.round(nights / 30 * 10) / 10} mois`
+    if (pricePerWeek && nights >= 7) return `${Math.round(nights / 7 * 10) / 10} sem.`
+    return `${nights} nuit${nights > 1 ? 's' : ''}`
+  }
+
+  const nights = getNightsCount()
+  const totalPrice = getPrice()
+  const commission = Math.round(totalPrice * COMMISSION_RATE)
+
+  async function handleSubmit() {
+    setError('')
+    if (!checkIn || !checkOut) { setError('Choisissez vos dates'); return }
+    if (nights <= 0) { setError('Date de départ invalide'); return }
+    if (guests < 1 || guests > maxGuests) { setError(`Maximum ${maxGuests} personnes`); return }
+
+    setLoading(true)
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) { router.push('/login'); return }
+
+    const reference = `ZND-R-${Date.now()}`
+    const ownerAmount = totalPrice - commission
+
+    const { data: booking, error: bookingError } = await supabase
+      .from('bookings')
+      .insert({
+        user_id: user.id,
+        item_type: 'residence',
+        item_id: residenceId,
+        reference,
+        start_date: checkIn,
+        end_date: checkOut,
+        guests_count: guests,
+        total_price: totalPrice,
+        commission_amount: commission,
+        owner_amount: ownerAmount,
+        status: 'pending',
+      })
+      .select()
+      .single()
+
+    if (bookingError || !booking) {
+      setError('Erreur lors de la réservation')
+      setLoading(false)
+      return
+    }
+
+    router.push(`/checkout?booking_id=${booking.id}&reference=${reference}&amount=${totalPrice}&type=residence`)
+  }
+
+  const inputStyle = {
+    width: '100%',
+    background: 'rgba(255,255,255,0.05)',
+    border: '1px solid rgba(255,255,255,0.1)',
+    borderRadius: 10,
+    padding: '12px 14px',
+    color: '#e2e8f0',
+    fontSize: 14,
+    outline: 'none',
+    boxSizing: 'border-box' as const,
+    colorScheme: 'dark' as const,
+  }
+
+  const labelStyle = {
+    display: 'block',
+    fontSize: 11,
+    fontWeight: 600,
+    color: '#64748b',
+    textTransform: 'uppercase' as const,
+    letterSpacing: '0.08em',
+    marginBottom: 8,
+  }
+
+  return (
+    <div style={{
+      background: 'rgba(255,255,255,0.03)',
+      border: '1px solid rgba(34,211,165,0.2)',
+      borderRadius: 20,
+      padding: 28,
+    }}>
+      <div style={{ marginBottom: 24 }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+          <span style={{ fontSize: 28, fontWeight: 700, color: '#22d3a5' }}>
+            {formatPrice(pricePerNight)}
+          </span>
+          <span style={{ color: '#64748b', fontSize: 14 }}>/nuit</span>
+        </div>
+        {pricePerWeek && (
+          <p style={{ color: '#64748b', fontSize: 12, marginTop: 4 }}>
+            {formatPrice(pricePerWeek)}/semaine{pricePerMonth ? ` · ${formatPrice(pricePerMonth)}/mois` : ''}
+          </p>
+        )}
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
+        <div>
+          <label style={labelStyle}>Arrivée</label>
+          <input type="date" value={checkIn} min={today}
+            onChange={e => { setCheckIn(e.target.value); setError('') }}
+            style={inputStyle} />
+        </div>
+        <div>
+          <label style={labelStyle}>Départ</label>
+          <input type="date" value={checkOut} min={checkIn || today}
+            onChange={e => { setCheckOut(e.target.value); setError('') }}
+            style={inputStyle} />
+        </div>
+      </div>
+
+      <div style={{ marginBottom: 24 }}>
+        <label style={labelStyle}>Voyageurs</label>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <button onClick={() => setGuests(g => Math.max(1, g - 1))} style={{
+            width: 36, height: 36, borderRadius: 8,
+            background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)',
+            color: '#e2e8f0', fontSize: 18, cursor: 'pointer',
+          }}>−</button>
+          <span style={{ color: '#e2e8f0', fontWeight: 600, minWidth: 24, textAlign: 'center' }}>{guests}</span>
+          <button onClick={() => setGuests(g => Math.min(maxGuests, g + 1))} style={{
+            width: 36, height: 36, borderRadius: 8,
+            background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)',
+            color: '#e2e8f0', fontSize: 18, cursor: 'pointer',
+          }}>+</button>
+          <span style={{ color: '#64748b', fontSize: 13 }}>/ {maxGuests} max</span>
+        </div>
+      </div>
+
+      {nights > 0 && totalPrice > 0 && (
+        <div style={{
+          background: 'rgba(255,255,255,0.03)',
+          border: '1px solid rgba(255,255,255,0.06)',
+          borderRadius: 12, padding: 16, marginBottom: 20,
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+            <span style={{ color: '#94a3b8', fontSize: 13 }}>{formatPrice(pricePerNight)} × {getPriceLabel()}</span>
+            <span style={{ color: '#e2e8f0', fontSize: 13 }}>{formatPrice(totalPrice)}</span>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+            <span style={{ color: '#94a3b8', fontSize: 13 }}>Frais de service (10%)</span>
+            <span style={{ color: '#94a3b8', fontSize: 13 }}>inclus</span>
+          </div>
+          <div style={{
+            display: 'flex', justifyContent: 'space-between',
+            paddingTop: 10, borderTop: '1px solid rgba(255,255,255,0.06)',
+          }}>
+            <span style={{ color: '#e2e8f0', fontWeight: 600 }}>Total</span>
+            <span style={{ color: '#22d3a5', fontWeight: 700, fontSize: 16 }}>{formatPrice(totalPrice)}</span>
+          </div>
+        </div>
+      )}
+
+      {error && (
+        <div style={{
+          background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)',
+          borderRadius: 10, padding: '10px 14px', marginBottom: 16,
+          color: '#f87171', fontSize: 13,
+        }}>
+          {error}
+        </div>
+      )}
+
+      <button
+        onClick={handleSubmit}
+        disabled={loading || !checkIn || !checkOut || nights <= 0}
+        style={{
+          width: '100%', padding: '14px',
+          background: (loading || !checkIn || !checkOut || nights <= 0)
+            ? 'rgba(34,211,165,0.3)'
+            : 'linear-gradient(135deg, #22d3a5, #0891b2)',
+          border: 'none', borderRadius: 12,
+          color: (loading || !checkIn || !checkOut || nights <= 0) ? '#64748b' : '#0a0f1a',
+          fontWeight: 700, fontSize: 15, cursor: loading ? 'wait' : 'pointer',
+          transition: 'all 0.2s',
+        }}
+      >
+        {loading ? 'Réservation...' : nights > 0 ? `Réserver — ${formatPrice(totalPrice)}` : 'Choisir les dates'}
+      </button>
+
+      <p style={{ textAlign: 'center', color: '#475569', fontSize: 12, marginTop: 12 }}>
+        🔒 Paiement sécurisé via Genius Pay
+      </p>
+    </div>
+  )
+}
