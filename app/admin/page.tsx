@@ -9,8 +9,9 @@ export default async function AdminPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const { data: profile } = await supabase
-    .from('profiles').select('*').eq('id', user.id).single() as { data: { is_admin: boolean; full_name: string } | null })
+  const profileResult = await supabase
+    .from('profiles').select('*').eq('id', user.id).single()
+  const profile = profileResult.data as { is_admin: boolean; full_name: string } | null
 
   if (!profile?.is_admin) redirect('/dashboard')
 
@@ -97,9 +98,7 @@ export default async function AdminPage() {
           </div>
         </div>
 
-        {/* ═══════════════════════════════════════════ */}
-        {/* SECTION VALIDATION — NOUVEAU */}
-        {/* ═══════════════════════════════════════════ */}
+        {/* VALIDATION */}
         <AdminValidation
           pendingResidences={pendingResidences ?? []}
           pendingVehicles={pendingVehicles ?? []}
