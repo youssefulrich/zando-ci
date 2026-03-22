@@ -7,11 +7,13 @@ export default async function DashboardPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const { data: profile } = await supabase
+  const { data: profileRaw } = await supabase
     .from('profiles')
     .select('*')
     .eq('id', user.id)
     .single()
+
+  const profile = profileRaw as { full_name: string; city: string; account_type: string } | null
 
   if (!profile) redirect('/login')
 
