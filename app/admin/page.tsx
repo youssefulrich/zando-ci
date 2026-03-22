@@ -10,7 +10,7 @@ export default async function AdminPage() {
   if (!user) redirect('/login')
 
   const { data: profile } = await supabase
-    .from('profiles').select('*').eq('id', user.id).single()
+    .from('profiles').select('*').eq('id', user.id).single() as { data: { is_admin: boolean; full_name: string } | null })
 
   if (!profile?.is_admin) redirect('/dashboard')
 
