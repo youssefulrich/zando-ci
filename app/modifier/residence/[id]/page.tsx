@@ -25,20 +25,20 @@ export default function ModifierResidencePage() {
   const [data, setData] = useState({
     title: '', type: 'apartment', description: '', address: '',
     city: 'Abidjan', bedrooms: 1, bathrooms: 1, max_guests: 2,
-    surface_area: '', price_per_night: '', price_per_week: '', price_per_month: '',
+    surface: '', price_per_night: '',
     amenities: [] as string[], photos: [] as string[],
   })
 
   useEffect(() => {
-    const supabase = createClient()
-    supabase.from('residences').select('*').eq('id', id).single().then(({ data: r }) => {
+    const supabase = createClient() as any
+    supabase.from('residences').select('*').eq('id', id).single().then(({ data: r }: any) => {
       if (r) setData({
         title: r.title ?? '', type: r.type ?? 'apartment',
         description: r.description ?? '', address: r.address ?? '',
         city: r.city ?? 'Abidjan', bedrooms: r.bedrooms ?? 1,
         bathrooms: r.bathrooms ?? 1, max_guests: r.max_guests ?? 2,
-        surface_area: r.surface_area ?? '', price_per_night: r.price_per_night ?? '',
-        price_per_week: r.price_per_week ?? '', price_per_month: r.price_per_month ?? '',
+        surface: r.surface ?? '',
+        price_per_night: r.price_per_night ?? '',
         amenities: Array.isArray(r.amenities) ? r.amenities : [],
         photos: Array.isArray(r.photos) ? r.photos : [],
       })
@@ -59,15 +59,13 @@ export default function ModifierResidencePage() {
     setError('')
     if (!data.title || !data.price_per_night) { setError('Titre et prix par nuit requis'); return }
     setSaving(true)
-    const supabase = createClient()
+    const supabase = createClient() as any
     const { error: err } = await supabase.from('residences').update({
       title: data.title, type: data.type, description: data.description,
       address: data.address, city: data.city, bedrooms: data.bedrooms,
       bathrooms: data.bathrooms, max_guests: data.max_guests,
-      surface_area: data.surface_area ? Number(data.surface_area) : null,
+      surface: data.surface ? Number(data.surface) : null,
       price_per_night: Number(data.price_per_night),
-      price_per_week: data.price_per_week ? Number(data.price_per_week) : null,
-      price_per_month: data.price_per_month ? Number(data.price_per_month) : null,
       amenities: data.amenities, photos: data.photos,
     }).eq('id', id)
 
@@ -156,7 +154,7 @@ export default function ModifierResidencePage() {
               { field: 'bedrooms', label: '🛏️ Chambres', min: 0, max: 20 },
               { field: 'bathrooms', label: '🚿 SDB', min: 1, max: 10 },
               { field: 'max_guests', label: '👥 Personnes max', min: 1, max: 50 },
-              { field: 'surface_area', label: '📐 Surface (m²)', min: 0, max: 9999 },
+              { field: 'surface', label: '📐 Surface (m²)', min: 0, max: 9999 },
             ].map(({ field, label, min, max }) => (
               <div key={field}>
                 <label style={labelStyle}>{label}</label>
@@ -169,19 +167,11 @@ export default function ModifierResidencePage() {
 
         {/* Tarifs */}
         <div style={sectionStyle}>
-          <h2 style={{ fontSize: 13, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 20 }}>Tarifs (FCFA)</h2>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
-            {[
-              { field: 'price_per_night', label: 'Prix / nuit *', placeholder: '30 000' },
-              { field: 'price_per_week', label: 'Prix / semaine', placeholder: '180 000' },
-              { field: 'price_per_month', label: 'Prix / mois', placeholder: '600 000' },
-            ].map(({ field, label, placeholder }) => (
-              <div key={field}>
-                <label style={labelStyle}>{label}</label>
-                <input type="number" style={inputStyle} value={(data as any)[field]}
-                  onChange={e => set(field, e.target.value)} placeholder={placeholder} />
-              </div>
-            ))}
+          <h2 style={{ fontSize: 13, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 20 }}>Tarif (FCFA)</h2>
+          <div style={{ maxWidth: 240 }}>
+            <label style={labelStyle}>Prix / nuit *</label>
+            <input type="number" style={inputStyle} value={data.price_per_night}
+              onChange={e => set('price_per_night', e.target.value)} placeholder="30 000" />
           </div>
         </div>
 
