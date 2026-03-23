@@ -32,3 +32,8 @@ input, select, textarea {
   background: rgba(34,211,165,0.25);
   color: #fff;
 }
+html, body {
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden; /* 🔥 empêche le débordement */
+}
