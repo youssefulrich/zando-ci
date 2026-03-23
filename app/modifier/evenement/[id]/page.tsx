@@ -25,25 +25,29 @@ export default function ModifierEvenementPage() {
   const [data, setData] = useState({
     title: '', category: 'concert', description: '',
     event_date: '', event_time: '', end_date: '', end_time: '',
-    venue_name: '', address: '', city: 'Abidjan',
-    ticket_price: '', total_tickets: '', cover_image: '',
+    venue_name: '', venue_address: '', 
+    ticket_price: '', total_tickets: '', main_photo: '',
   })
 
   useEffect(() => {
-    const supabase = createClient()
-    supabase.from('events').select('*').eq('id', id).single().then(({ data: e }) => {
+    const supabase = createClient() as any
+    supabase.from('events').select('*').eq('id', id).single().then(({ data: e }: any) => {
       if (e) {
         const startDate = e.event_date ? e.event_date.split('T')[0] : ''
-        const startTime = e.event_date ? e.event_date.split('T')[1]?.slice(0, 5) : ''
-        const endDate = e.end_date ? e.end_date.split('T')[0] : ''
-        const endTime = e.end_date ? e.end_date.split('T')[1]?.slice(0, 5) : ''
+        const startTime = e.event_time ? e.event_time.slice(0, 5) : '20:00'
         setData({
-          title: e.title ?? '', category: e.category ?? 'concert',
-          description: e.description ?? '', event_date: startDate,
-          event_time: startTime ?? '20:00', end_date: endDate, end_time: endTime ?? '23:00',
-          venue_name: e.venue_name ?? '', address: e.address ?? '',
-          city: e.city ?? 'Abidjan', ticket_price: e.ticket_price ?? '',
-          total_tickets: e.total_tickets ?? '', cover_image: e.cover_image ?? '',
+          title: e.title ?? '',
+          category: e.category ?? 'concert',
+          description: e.description ?? '',
+          event_date: startDate,
+          event_time: startTime,
+          end_date: '',
+          end_time: '23:00',
+          venue_name: e.venue_name ?? '',
+          venue_address: e.venue_address ?? '',
+          ticket_price: e.price_per_ticket ?? '',
+          total_tickets: e.total_capacity ?? '',
+          main_photo: e.main_photo ?? '',
         })
       }
       setLoading(false)
@@ -59,17 +63,20 @@ export default function ModifierEvenementPage() {
       return
     }
     setSaving(true)
-    const supabase = createClient()
+    const supabase = createClient() as any
     const eventDatetime = `${data.event_date}T${data.event_time || '20:00'}:00`
-    const endDatetime = data.end_date ? `${data.end_date}T${data.end_time || '23:00'}:00` : null
 
     const { error: err } = await supabase.from('events').update({
-      title: data.title, category: data.category, description: data.description,
-      event_date: eventDatetime, end_date: endDatetime,
-      venue_name: data.venue_name, address: data.address, city: data.city,
-      ticket_price: Number(data.ticket_price),
-      total_tickets: Number(data.total_tickets),
-      cover_image: data.cover_image || null,
+      title: data.title,
+      category: data.category,
+      description: data.description,
+      event_date: eventDatetime,
+      event_time: data.event_time || '20:00',
+      venue_name: data.venue_name,
+      venue_address: data.venue_address,
+      price_per_ticket: Number(data.ticket_price),
+      total_capacity: Number(data.total_tickets),
+      main_photo: data.main_photo || null,
     }).eq('id', id)
 
     if (err) { setError('Erreur lors de la sauvegarde'); setSaving(false); return }
@@ -140,38 +147,24 @@ export default function ModifierEvenementPage() {
         {/* Date & Lieu */}
         <div style={sectionStyle}>
           <h2 style={{ fontSize: 13, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 20 }}>Date & Lieu</h2>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 16, marginBottom: 16 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
             <div>
-              <label style={labelStyle}>Date début *</label>
+              <label style={labelStyle}>Date *</label>
               <input type="date" style={inputStyle} value={data.event_date} onChange={e => set('event_date', e.target.value)} />
             </div>
             <div>
-              <label style={labelStyle}>Heure début</label>
+              <label style={labelStyle}>Heure</label>
               <input type="time" style={inputStyle} value={data.event_time} onChange={e => set('event_time', e.target.value)} />
             </div>
-            <div>
-              <label style={labelStyle}>Date fin</label>
-              <input type="date" style={inputStyle} value={data.end_date} onChange={e => set('end_date', e.target.value)} />
-            </div>
-            <div>
-              <label style={labelStyle}>Heure fin</label>
-              <input type="time" style={inputStyle} value={data.end_time} onChange={e => set('end_time', e.target.value)} />
-            </div>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
             <div>
               <label style={labelStyle}>Salle / Lieu</label>
               <input style={inputStyle} value={data.venue_name} onChange={e => set('venue_name', e.target.value)} placeholder="Sofitel, Stade..." />
             </div>
             <div>
               <label style={labelStyle}>Adresse</label>
-              <input style={inputStyle} value={data.address} onChange={e => set('address', e.target.value)} placeholder="Plateau, Cocody..." />
-            </div>
-            <div>
-              <label style={labelStyle}>Ville</label>
-              <select style={{ ...inputStyle, background: '#0f172a' }} value={data.city} onChange={e => set('city', e.target.value)}>
-                {CITIES.map(c => <option key={c} value={c}>{c}</option>)}
-              </select>
+              <input style={inputStyle} value={data.venue_address} onChange={e => set('venue_address', e.target.value)} placeholder="Plateau, Cocody..." />
             </div>
           </div>
         </div>
@@ -182,24 +175,22 @@ export default function ModifierEvenementPage() {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
             <div>
               <label style={labelStyle}>Prix du billet (FCFA) *</label>
-              <input type="number" style={inputStyle} value={data.ticket_price}
-                onChange={e => set('ticket_price', e.target.value)} placeholder="5 000" />
+              <input type="number" style={inputStyle} value={data.ticket_price} onChange={e => set('ticket_price', e.target.value)} placeholder="5 000" />
             </div>
             <div>
               <label style={labelStyle}>Nombre total de billets *</label>
-              <input type="number" style={inputStyle} value={data.total_tickets}
-                onChange={e => set('total_tickets', e.target.value)} placeholder="500" />
+              <input type="number" style={inputStyle} value={data.total_tickets} onChange={e => set('total_tickets', e.target.value)} placeholder="500" />
             </div>
           </div>
         </div>
 
-        {/* Affiche */}
+        {/* Photo */}
         <div style={sectionStyle}>
-          <h2 style={{ fontSize: 13, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 20 }}>Affiche / Photo de couverture (URL)</h2>
-          <input style={inputStyle} value={data.cover_image} onChange={e => set('cover_image', e.target.value)} placeholder="https://..." />
-          {data.cover_image && (
+          <h2 style={{ fontSize: 13, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 20 }}>Photo principale (URL)</h2>
+          <input style={inputStyle} value={data.main_photo} onChange={e => set('main_photo', e.target.value)} placeholder="https://..." />
+          {data.main_photo && (
             <div style={{ marginTop: 12, width: 160, height: 100, borderRadius: 8, overflow: 'hidden' }}>
-              <img src={data.cover_image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              <img src={data.main_photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             </div>
           )}
         </div>
