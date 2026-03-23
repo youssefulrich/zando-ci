@@ -5,7 +5,7 @@ import { useRouter, useParams } from 'next/navigation'
 import Navbar from '@/components/layout/Navbar'
 import { createClient } from '@/lib/supabase/client'
 
-const CATEGORIES = [
+const TYPES = [
   { value: 'berline', label: 'Berline' }, { value: 'suv', label: 'SUV' },
   { value: '4x4', label: '4x4' }, { value: 'utilitaire', label: 'Utilitaire' },
   { value: 'minibus', label: 'Minibus' }, { value: 'pick_up', label: 'Pick-up' },
@@ -29,24 +29,22 @@ export default function ModifierVehiculePage() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
   const [data, setData] = useState({
-    brand: '', model: '', year: new Date().getFullYear(), category: 'berline',
-    transmission: 'automatique', fuel_type: 'essence', seats: 5,
-    price_per_day: '', price_per_week: '', price_per_month: '',
-    city: 'Abidjan', description: '', with_driver: false, is_available: true,
+    brand: '', model: '', year: new Date().getFullYear(), type: 'berline',
+    transmission: 'automatique', fuel: 'essence', seats: 5,
+    price_per_day: '', city: 'Abidjan', description: '', is_available: true,
     main_photo: '',
   })
 
   useEffect(() => {
-    const supabase = createClient()
-    supabase.from('vehicles').select('*').eq('id', id).single().then(({ data: v }) => {
+    const supabase = createClient() as any
+    supabase.from('vehicles').select('*').eq('id', id).single().then(({ data: v }: any) => {
       if (v) setData({
         brand: v.brand ?? '', model: v.model ?? '', year: v.year ?? new Date().getFullYear(),
-        category: v.category ?? 'berline', transmission: v.transmission ?? 'automatique',
-        fuel_type: v.fuel_type ?? 'essence', seats: v.seats ?? 5,
-        price_per_day: v.price_per_day ?? '', price_per_week: v.price_per_week ?? '',
-        price_per_month: v.price_per_month ?? '', city: v.city ?? 'Abidjan',
-        description: v.description ?? '', with_driver: v.with_driver ?? false,
-        is_available: v.is_available ?? true, main_photo: v.main_photo ?? '',
+        type: v.type ?? 'berline', transmission: v.transmission ?? 'automatique',
+        fuel: v.fuel ?? 'essence', seats: v.seats ?? 5,
+        price_per_day: v.price_per_day ?? '', city: v.city ?? 'Abidjan',
+        description: v.description ?? '', is_available: v.is_available ?? true,
+        main_photo: v.main_photo ?? '',
       })
       setLoading(false)
     })
@@ -63,16 +61,14 @@ export default function ModifierVehiculePage() {
       return
     }
     setSaving(true)
-    const supabase = createClient()
+    const supabase = createClient() as any
     const { error: err } = await supabase.from('vehicles').update({
       brand: data.brand, model: data.model, year: data.year,
-      category: data.category, transmission: data.transmission,
-      fuel_type: data.fuel_type, seats: data.seats,
+      type: data.type, transmission: data.transmission,
+      fuel: data.fuel, seats: data.seats,
       price_per_day: Number(data.price_per_day),
-      price_per_week: data.price_per_week ? Number(data.price_per_week) : null,
-      price_per_month: data.price_per_month ? Number(data.price_per_month) : null,
       city: data.city, description: data.description,
-      with_driver: data.with_driver, is_available: data.is_available,
+      is_available: data.is_available,
       main_photo: data.main_photo || null,
     }).eq('id', id)
 
@@ -144,16 +140,16 @@ export default function ModifierVehiculePage() {
           </div>
 
           <div style={{ marginBottom: 16 }}>
-            <label style={labelStyle}>Catégorie</label>
+            <label style={labelStyle}>Type</label>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-              {CATEGORIES.map(c => (
-                <button key={c.value} onClick={() => set('category', c.value)} style={{
+              {TYPES.map(t => (
+                <button key={t.value} onClick={() => set('type', t.value)} style={{
                   padding: '8px 16px', borderRadius: 8, fontSize: 13, cursor: 'pointer',
-                  background: data.category === c.value ? 'rgba(96,165,250,0.15)' : 'rgba(255,255,255,0.04)',
-                  border: `1px solid ${data.category === c.value ? 'rgba(96,165,250,0.5)' : 'rgba(255,255,255,0.08)'}`,
-                  color: data.category === c.value ? accent : '#94a3b8',
-                  fontWeight: data.category === c.value ? 600 : 400,
-                }}>{c.label}</button>
+                  background: data.type === t.value ? 'rgba(96,165,250,0.15)' : 'rgba(255,255,255,0.04)',
+                  border: `1px solid ${data.type === t.value ? 'rgba(96,165,250,0.5)' : 'rgba(255,255,255,0.08)'}`,
+                  color: data.type === t.value ? accent : '#94a3b8',
+                  fontWeight: data.type === t.value ? 600 : 400,
+                }}>{t.label}</button>
               ))}
             </div>
           </div>
@@ -177,12 +173,12 @@ export default function ModifierVehiculePage() {
               <label style={labelStyle}>Carburant</label>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                 {FUELS.map(f => (
-                  <button key={f.value} onClick={() => set('fuel_type', f.value)} style={{
+                  <button key={f.value} onClick={() => set('fuel', f.value)} style={{
                     padding: '8px 14px', borderRadius: 8, fontSize: 12, cursor: 'pointer',
-                    background: data.fuel_type === f.value ? 'rgba(96,165,250,0.15)' : 'rgba(255,255,255,0.04)',
-                    border: `1px solid ${data.fuel_type === f.value ? 'rgba(96,165,250,0.5)' : 'rgba(255,255,255,0.08)'}`,
-                    color: data.fuel_type === f.value ? accent : '#94a3b8',
-                    fontWeight: data.fuel_type === f.value ? 600 : 400,
+                    background: data.fuel === f.value ? 'rgba(96,165,250,0.15)' : 'rgba(255,255,255,0.04)',
+                    border: `1px solid ${data.fuel === f.value ? 'rgba(96,165,250,0.5)' : 'rgba(255,255,255,0.08)'}`,
+                    color: data.fuel === f.value ? accent : '#94a3b8',
+                    fontWeight: data.fuel === f.value ? 600 : 400,
                   }}>{f.label}</button>
                 ))}
               </div>
@@ -196,41 +192,26 @@ export default function ModifierVehiculePage() {
           </div>
         </div>
 
-        {/* Tarifs */}
+        {/* Tarif */}
         <div style={sectionStyle}>
-          <h2 style={{ fontSize: 13, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 20 }}>Tarifs (FCFA)</h2>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
-            {[
-              { field: 'price_per_day', label: 'Prix / jour *', placeholder: '25 000' },
-              { field: 'price_per_week', label: 'Prix / semaine', placeholder: '150 000' },
-              { field: 'price_per_month', label: 'Prix / mois', placeholder: '500 000' },
-            ].map(({ field, label, placeholder }) => (
-              <div key={field}>
-                <label style={labelStyle}>{label}</label>
-                <input type="number" style={inputStyle} value={(data as any)[field]}
-                  onChange={e => set(field, e.target.value)} placeholder={placeholder} />
-              </div>
-            ))}
+          <h2 style={{ fontSize: 13, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 20 }}>Tarif (FCFA)</h2>
+          <div style={{ maxWidth: 240 }}>
+            <label style={labelStyle}>Prix / jour *</label>
+            <input type="number" style={inputStyle} value={data.price_per_day}
+              onChange={e => set('price_per_day', e.target.value)} placeholder="25 000" />
           </div>
         </div>
 
         {/* Options */}
         <div style={sectionStyle}>
           <h2 style={{ fontSize: 13, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 20 }}>Options</h2>
-          <div style={{ display: 'flex', gap: 16 }}>
-            {[
-              { field: 'with_driver', label: '🧑‍✈️ Avec chauffeur', color: accent },
-              { field: 'is_available', label: '✅ Disponible', color: '#22d3a5' },
-            ].map(({ field, label, color }) => (
-              <button key={field} onClick={() => set(field, !(data as any)[field])} style={{
-                padding: '12px 20px', borderRadius: 10, fontSize: 13, cursor: 'pointer',
-                background: (data as any)[field] ? `rgba(${field === 'with_driver' ? '96,165,250' : '34,211,165'},0.12)` : 'rgba(255,255,255,0.04)',
-                border: `1px solid ${(data as any)[field] ? color + '55' : 'rgba(255,255,255,0.08)'}`,
-                color: (data as any)[field] ? color : '#64748b',
-                fontWeight: (data as any)[field] ? 600 : 400,
-              }}>{label}</button>
-            ))}
-          </div>
+          <button onClick={() => set('is_available', !data.is_available)} style={{
+            padding: '12px 20px', borderRadius: 10, fontSize: 13, cursor: 'pointer',
+            background: data.is_available ? 'rgba(34,211,165,0.12)' : 'rgba(255,255,255,0.04)',
+            border: `1px solid ${data.is_available ? '#22d3a555' : 'rgba(255,255,255,0.08)'}`,
+            color: data.is_available ? '#22d3a5' : '#64748b',
+            fontWeight: data.is_available ? 600 : 400,
+          }}>✅ Disponible à la location</button>
         </div>
 
         {/* Photo principale */}
@@ -244,16 +225,8 @@ export default function ModifierVehiculePage() {
           )}
         </div>
 
-        {error && (
-          <div style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 10, padding: '12px 16px', marginBottom: 20, color: '#f87171', fontSize: 13 }}>
-            {error}
-          </div>
-        )}
-        {success && (
-          <div style={{ background: 'rgba(34,211,165,0.1)', border: '1px solid rgba(34,211,165,0.3)', borderRadius: 10, padding: '12px 16px', marginBottom: 20, color: '#22d3a5', fontSize: 13 }}>
-            ✅ Véhicule mis à jour ! Redirection...
-          </div>
-        )}
+        {error && <div style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 10, padding: '12px 16px', marginBottom: 20, color: '#f87171', fontSize: 13 }}>{error}</div>}
+        {success && <div style={{ background: 'rgba(34,211,165,0.1)', border: '1px solid rgba(34,211,165,0.3)', borderRadius: 10, padding: '12px 16px', marginBottom: 20, color: '#22d3a5', fontSize: 13 }}>✅ Véhicule mis à jour ! Redirection...</div>}
 
         <div style={{ display: 'flex', gap: 12 }}>
           <button onClick={() => router.push('/dashboard')} style={{
@@ -264,9 +237,7 @@ export default function ModifierVehiculePage() {
             flex: 1, padding: '14px', borderRadius: 12, border: 'none',
             background: saving ? 'rgba(96,165,250,0.3)' : 'linear-gradient(135deg, #60a5fa, #3b82f6)',
             color: saving ? '#64748b' : '#0a1428', fontWeight: 700, fontSize: 15, cursor: saving ? 'wait' : 'pointer',
-          }}>
-            {saving ? 'Sauvegarde...' : 'Enregistrer les modifications'}
-          </button>
+          }}>{saving ? 'Sauvegarde...' : 'Enregistrer les modifications'}</button>
         </div>
       </div>
     </div>
