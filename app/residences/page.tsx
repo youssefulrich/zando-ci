@@ -39,177 +39,165 @@ export default async function ResidencesPage({
     { value: 'studio', label: 'Studio' },
   ]
 
-  const s = {
-    page: { background: '#0a0f1a', minHeight: '100vh' },
-    container: { maxWidth: 1200, margin: '0 auto', padding: '40px 48px' },
-    label: { fontSize: 11, color: '#22d3a5', textTransform: 'uppercase' as const, letterSpacing: 2, fontWeight: 600, marginBottom: 8 },
-    title: { fontSize: 36, fontWeight: 800, color: '#fff', letterSpacing: -1, marginBottom: 6 },
-    sub: { fontSize: 14, color: 'rgba(255,255,255,0.35)' },
-    sidebar: {
-      width: 240, flexShrink: 0,
-      background: '#111827', border: '0.5px solid rgba(255,255,255,0.08)',
-      borderRadius: 16, padding: 20,
-    },
-    sideLabel: { fontSize: 11, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase' as const, letterSpacing: 1, fontWeight: 600, marginBottom: 8, display: 'block' },
-    select: {
-      width: '100%', background: 'rgba(255,255,255,0.05)',
-      border: '0.5px solid rgba(255,255,255,0.1)', borderRadius: 10,
-      padding: '10px 12px', fontSize: 13, color: '#fff',
-      marginBottom: 16, outline: 'none', colorScheme: 'dark' as const,
-    },
-    input: {
-      width: '100%', background: 'rgba(255,255,255,0.05)',
-      border: '0.5px solid rgba(255,255,255,0.1)', borderRadius: 10,
-      padding: '10px 12px', fontSize: 13, color: '#fff',
-      marginBottom: 8, outline: 'none', colorScheme: 'dark' as const,
-    },
-    btnFilter: {
-      width: '100%', padding: 11, background: '#22d3a5',
-      color: '#0a1a14', borderRadius: 10, border: 'none',
-      fontSize: 13, fontWeight: 700, cursor: 'pointer', marginBottom: 10,
-    },
-    grid: { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, flex: 1 },
-    card: {
-      background: '#111827', border: '0.5px solid rgba(255,255,255,0.08)',
-      borderRadius: 16, overflow: 'hidden', textDecoration: 'none', display: 'block',
-    },
-  }
-
   return (
-    <div style={s.page}>
-      <Navbar />
-      <div style={s.container}>
+    <>
+      <style>{`
+        .res-container { max-width: 1200px; margin: 0 auto; padding: 40px 48px; }
+        .res-layout { display: flex; gap: 32px; align-items: flex-start; }
+        .res-sidebar {
+          width: 240px; flex-shrink: 0;
+          background: #111827; border: 0.5px solid rgba(255,255,255,0.08);
+          border-radius: 16px; padding: 20px;
+        }
+        .res-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; flex: 1; }
+        .res-filter-toggle {
+          display: none; width: 100%; padding: 11px; background: rgba(255,255,255,0.05);
+          border: 0.5px solid rgba(255,255,255,0.12); border-radius: 10px;
+          color: #fff; font-size: 13px; cursor: pointer; margin-bottom: 16px;
+        }
 
-        {/* Header */}
-        <div style={{ marginBottom: 40 }}>
-          <div style={s.label}>Location</div>
-          <h1 style={s.title}>Résidences disponibles</h1>
-          <p style={s.sub}>{count ?? 0} résidences en Côte d&apos;Ivoire</p>
-        </div>
+        @media (max-width: 767px) {
+          .res-container { padding: 24px 16px; }
+          .res-layout { flex-direction: column; }
+          .res-sidebar { width: 100%; }
+          .res-grid { grid-template-columns: 1fr 1fr; }
+          .res-filter-toggle { display: block; }
+          .res-sidebar-inner { display: none; }
+          .res-sidebar-inner.open { display: block; }
+          .res-title { font-size: 26px !important; }
+        }
 
-        {/* Filtres rapides type */}
-        <div style={{ display: 'flex', gap: 8, marginBottom: 32, flexWrap: 'wrap' }}>
-          <Link href="/residences" style={{
-            padding: '7px 16px', borderRadius: 20, fontSize: 12, fontWeight: 600,
-            textDecoration: 'none',
-            background: !params.type ? '#22d3a5' : 'rgba(255,255,255,0.05)',
-            color: !params.type ? '#0a1a14' : 'rgba(255,255,255,0.5)',
-            border: '0.5px solid rgba(255,255,255,0.1)',
-          }}>Tous types</Link>
-          {TYPES.map(t => (
-            <Link key={t.value} href={`/residences?type=${t.value}`} style={{
-              padding: '7px 16px', borderRadius: 20, fontSize: 12, fontWeight: 600,
-              textDecoration: 'none',
-              background: params.type === t.value ? '#22d3a5' : 'rgba(255,255,255,0.05)',
-              color: params.type === t.value ? '#0a1a14' : 'rgba(255,255,255,0.5)',
+        @media (max-width: 480px) {
+          .res-grid { grid-template-columns: 1fr; }
+        }
+
+        @media (min-width: 768px) and (max-width: 1023px) {
+          .res-container { padding: 32px 24px; }
+          .res-sidebar { width: 200px; }
+          .res-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+      `}</style>
+
+      <div style={{ background: '#0a0f1a', minHeight: '100vh' }}>
+        <Navbar />
+        <div className="res-container">
+
+          {/* Header */}
+          <div style={{ marginBottom: 40 }}>
+            <div style={{ fontSize: 11, color: '#22d3a5', textTransform: 'uppercase', letterSpacing: 2, fontWeight: 600, marginBottom: 8 }}>Location</div>
+            <h1 className="res-title" style={{ fontSize: 36, fontWeight: 800, color: '#fff', letterSpacing: -1, marginBottom: 6 }}>Résidences disponibles</h1>
+            <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.35)' }}>{count ?? 0} résidences en Côte d&apos;Ivoire</p>
+          </div>
+
+          {/* Filtres rapides */}
+          <div style={{ display: 'flex', gap: 8, marginBottom: 32, flexWrap: 'wrap' }}>
+            <Link href="/residences" style={{
+              padding: '7px 16px', borderRadius: 20, fontSize: 12, fontWeight: 600, textDecoration: 'none',
+              background: !params.type ? '#22d3a5' : 'rgba(255,255,255,0.05)',
+              color: !params.type ? '#0a1a14' : 'rgba(255,255,255,0.5)',
               border: '0.5px solid rgba(255,255,255,0.1)',
-            }}>{t.label}</Link>
-          ))}
-        </div>
+            }}>Tous types</Link>
+            {TYPES.map(t => (
+              <Link key={t.value} href={`/residences?type=${t.value}`} style={{
+                padding: '7px 16px', borderRadius: 20, fontSize: 12, fontWeight: 600, textDecoration: 'none',
+                background: params.type === t.value ? '#22d3a5' : 'rgba(255,255,255,0.05)',
+                color: params.type === t.value ? '#0a1a14' : 'rgba(255,255,255,0.5)',
+                border: '0.5px solid rgba(255,255,255,0.1)',
+              }}>{t.label}</Link>
+            ))}
+          </div>
 
-        <div style={{ display: 'flex', gap: 32, alignItems: 'flex-start' }}>
+          <div className="res-layout">
+            {/* Sidebar */}
+            <aside className="res-sidebar">
+              <details>
+                <summary style={{
+                  display: 'block', width: '100%', padding: '10px 0', background: 'none',
+                  border: 'none', color: '#fff', fontSize: 13, cursor: 'pointer',
+                  listStyle: 'none', marginBottom: 16,
+                }}>
+                  <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11, textTransform: 'uppercase', letterSpacing: 1, fontWeight: 600 }}>
+                    🔍 Filtres
+                  </span>
+                </summary>
+                <form>
+                  <label style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: 1, fontWeight: 600, marginBottom: 8, display: 'block' }}>Ville</label>
+                  <select name="city" defaultValue={params.city ?? ''} style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '0.5px solid rgba(255,255,255,0.1)', borderRadius: 10, padding: '10px 12px', fontSize: 13, color: '#fff', marginBottom: 16, outline: 'none', colorScheme: 'dark' }}>
+                    <option value="">Toutes les villes</option>
+                    {CITIES.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
 
-          {/* Sidebar */}
-          <aside style={s.sidebar}>
-            <form>
-              <label style={s.sideLabel}>Ville</label>
-              <select name="city" defaultValue={params.city ?? ''} style={s.select}>
-                <option value="">Toutes les villes</option>
-                {CITIES.map(c => <option key={c} value={c}>{c}</option>)}
-              </select>
+                  <label style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: 1, fontWeight: 600, marginBottom: 8, display: 'block' }}>Prix / nuit (FCFA)</label>
+                  <input type="number" name="min" defaultValue={params.min ?? ''} placeholder="Min" style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '0.5px solid rgba(255,255,255,0.1)', borderRadius: 10, padding: '10px 12px', fontSize: 13, color: '#fff', marginBottom: 8, outline: 'none', colorScheme: 'dark', boxSizing: 'border-box' }} />
+                  <input type="number" name="max" defaultValue={params.max ?? ''} placeholder="Max" style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '0.5px solid rgba(255,255,255,0.1)', borderRadius: 10, padding: '10px 12px', fontSize: 13, color: '#fff', marginBottom: 16, outline: 'none', colorScheme: 'dark', boxSizing: 'border-box' }} />
 
-              <label style={s.sideLabel}>Prix / nuit (FCFA)</label>
-              <input type="number" name="min" defaultValue={params.min ?? ''} placeholder="Min" style={s.input} />
-              <input type="number" name="max" defaultValue={params.max ?? ''} placeholder="Max" style={{ ...s.input, marginBottom: 16 }} />
+                  <label style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: 1, fontWeight: 600, marginBottom: 8, display: 'block' }}>Chambres min.</label>
+                  <select name="bedrooms" defaultValue={params.bedrooms ?? ''} style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '0.5px solid rgba(255,255,255,0.1)', borderRadius: 10, padding: '10px 12px', fontSize: 13, color: '#fff', marginBottom: 16, outline: 'none', colorScheme: 'dark' }}>
+                    <option value="">Peu importe</option>
+                    {[1,2,3,4,5].map(n => <option key={n} value={n}>{n}+</option>)}
+                  </select>
 
-              <label style={s.sideLabel}>Chambres min.</label>
-              <select name="bedrooms" defaultValue={params.bedrooms ?? ''} style={s.select}>
-                <option value="">Peu importe</option>
-                {[1,2,3,4,5].map(n => <option key={n} value={n}>{n}+</option>)}
-              </select>
+                  {params.type && <input type="hidden" name="type" value={params.type} />}
 
-              {params.type && <input type="hidden" name="type" value={params.type} />}
+                  <button type="submit" style={{ width: '100%', padding: 11, background: '#22d3a5', color: '#0a1a14', borderRadius: 10, border: 'none', fontSize: 13, fontWeight: 700, cursor: 'pointer', marginBottom: 10 }}>Appliquer</button>
+                  <Link href="/residences" style={{ display: 'block', textAlign: 'center', fontSize: 12, color: 'rgba(255,255,255,0.3)', textDecoration: 'none' }}>Réinitialiser</Link>
+                </form>
+              </details>
+            </aside>
 
-              <button type="submit" style={s.btnFilter}>Appliquer</button>
-              <Link href="/residences" style={{ display: 'block', textAlign: 'center', fontSize: 12, color: 'rgba(255,255,255,0.3)', textDecoration: 'none' }}>
-                Réinitialiser
-              </Link>
-            </form>
-          </aside>
-
-          {/* Grille */}
-          <div style={{ flex: 1 }}>
-            {residences && residences.length > 0 ? (
-              <>
-                <div style={s.grid}>
-                  {residences.map(r => (
-                    <Link key={r.id} href={`/residences/${r.id}`} style={s.card}>
-                      {/* Image */}
-                      <div style={{ aspectRatio: '4/3', background: '#1a2236', overflow: 'hidden', position: 'relative' }}>
-                        {r.main_photo ? (
-                          <img src={r.main_photo} alt={r.title} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-                        ) : (
-                          <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 40, color: 'rgba(255,255,255,0.1)' }}>⌂</div>
-                        )}
-                        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(10,15,26,0.8) 0%, transparent 50%)' }} />
-                        <span style={{
-                          position: 'absolute', top: 12, left: 12,
-                          background: 'rgba(34,211,165,0.15)', color: '#22d3a5',
-                          fontSize: 11, fontWeight: 600, padding: '4px 10px', borderRadius: 20,
-                          border: '0.5px solid rgba(34,211,165,0.25)', textTransform: 'capitalize',
-                        }}>{r.type}</span>
-                        <div style={{ position: 'absolute', bottom: 12, left: 12 }}>
-                          <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', margin: 0 }}>{r.city}</p>
+            {/* Grille */}
+            <div style={{ flex: 1, minWidth: 0 }}>
+              {residences && residences.length > 0 ? (
+                <>
+                  <div className="res-grid">
+                    {residences.map(r => (
+                      <Link key={r.id} href={`/residences/${r.id}`} style={{ background: '#111827', border: '0.5px solid rgba(255,255,255,0.08)', borderRadius: 16, overflow: 'hidden', textDecoration: 'none', display: 'block' }}>
+                        <div style={{ aspectRatio: '4/3', background: '#1a2236', overflow: 'hidden', position: 'relative' }}>
+                          {r.main_photo ? (
+                            <img src={r.main_photo} alt={r.title} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                          ) : (
+                            <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 40, color: 'rgba(255,255,255,0.1)' }}>⌂</div>
+                          )}
+                          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(10,15,26,0.8) 0%, transparent 50%)' }} />
+                          <span style={{ position: 'absolute', top: 12, left: 12, background: 'rgba(34,211,165,0.15)', color: '#22d3a5', fontSize: 11, fontWeight: 600, padding: '4px 10px', borderRadius: 20, border: '0.5px solid rgba(34,211,165,0.25)', textTransform: 'capitalize' }}>{r.type}</span>
+                          <div style={{ position: 'absolute', bottom: 12, left: 12 }}>
+                            <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', margin: 0 }}>{r.city}</p>
+                          </div>
                         </div>
-                      </div>
-                      {/* Infos */}
-                      <div style={{ padding: 16 }}>
-                        <p style={{ fontSize: 14, fontWeight: 600, color: '#fff', marginBottom: 6, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.title}</p>
-                        <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', marginBottom: 10 }}>{r.bedrooms} chambre{r.bedrooms > 1 ? 's' : ''} · {r.max_guests} voyageurs max</p>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                          <p style={{ fontSize: 15, fontWeight: 700, color: '#22d3a5' }}>
-                            {formatPrice(r.price_per_night)}
-                            <span style={{ fontSize: 11, fontWeight: 400, color: 'rgba(255,255,255,0.3)' }}> / nuit</span>
-                          </p>
-                          <span style={{ fontSize: 12, color: '#22d3a5' }}>→</span>
+                        <div style={{ padding: 16 }}>
+                          <p style={{ fontSize: 14, fontWeight: 600, color: '#fff', marginBottom: 6, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.title}</p>
+                          <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', marginBottom: 10 }}>{r.bedrooms} chambre{r.bedrooms > 1 ? 's' : ''} · {r.max_guests} voyageurs max</p>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <p style={{ fontSize: 15, fontWeight: 700, color: '#22d3a5' }}>
+                              {formatPrice(r.price_per_night)}<span style={{ fontSize: 11, fontWeight: 400, color: 'rgba(255,255,255,0.3)' }}> / nuit</span>
+                            </p>
+                            <span style={{ fontSize: 12, color: '#22d3a5' }}>→</span>
+                          </div>
                         </div>
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-
-                {totalPages > 1 && (
-                  <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 40 }}>
-                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
-                      <Link key={p}
-                        href={`/residences?${new URLSearchParams({ ...params, page: String(p) })}`}
-                        style={{
-                          width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          borderRadius: 10, fontSize: 13, textDecoration: 'none',
-                          background: p === page ? '#22d3a5' : 'rgba(255,255,255,0.05)',
-                          color: p === page ? '#0a1a14' : 'rgba(255,255,255,0.5)',
-                          border: '0.5px solid rgba(255,255,255,0.08)',
-                          fontWeight: p === page ? 700 : 400,
-                        }}>
-                        {p}
                       </Link>
                     ))}
                   </div>
-                )}
-              </>
-            ) : (
-              <div style={{ textAlign: 'center', padding: '80px 20px' }}>
-                <div style={{ fontSize: 48, color: 'rgba(255,255,255,0.08)', marginBottom: 16 }}>⌂</div>
-                <p style={{ fontSize: 16, fontWeight: 600, color: 'rgba(255,255,255,0.4)', marginBottom: 8 }}>Aucune résidence trouvée</p>
-                <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.2)' }}>Essayez de modifier vos filtres</p>
-                <Link href="/residences" style={{ display: 'inline-block', marginTop: 20, fontSize: 13, color: '#22d3a5', textDecoration: 'none' }}>
-                  Voir toutes les résidences
-                </Link>
-              </div>
-            )}
+
+                  {totalPages > 1 && (
+                    <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 40, flexWrap: 'wrap' }}>
+                      {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
+                        <Link key={p} href={`/residences?${new URLSearchParams({ ...params, page: String(p) })}`} style={{ width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 10, fontSize: 13, textDecoration: 'none', background: p === page ? '#22d3a5' : 'rgba(255,255,255,0.05)', color: p === page ? '#0a1a14' : 'rgba(255,255,255,0.5)', border: '0.5px solid rgba(255,255,255,0.08)', fontWeight: p === page ? 700 : 400 }}>{p}</Link>
+                      ))}
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div style={{ textAlign: 'center', padding: '80px 20px' }}>
+                  <div style={{ fontSize: 48, color: 'rgba(255,255,255,0.08)', marginBottom: 16 }}>⌂</div>
+                  <p style={{ fontSize: 16, fontWeight: 600, color: 'rgba(255,255,255,0.4)', marginBottom: 8 }}>Aucune résidence trouvée</p>
+                  <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.2)' }}>Essayez de modifier vos filtres</p>
+                  <Link href="/residences" style={{ display: 'inline-block', marginTop: 20, fontSize: 13, color: '#22d3a5', textDecoration: 'none' }}>Voir toutes les résidences</Link>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </>
   )
 }

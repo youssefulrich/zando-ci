@@ -1,65 +1,39 @@
-/* ===== RESPONSIVE FIX GLOBAL ===== */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-/* Empêche tout débordement */
 * {
-  max-width: 100%;
+  box-sizing: border-box;
 }
 
-/* Images safe */
-img {
-  max-width: 100%;
-  height: auto;
-  display: block;
+html {
+  scroll-behavior: smooth;
 }
 
-/* Containers */
-.container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 16px;
+body {
+  background: #0a0f1a;
+  color: #f0f0f0;
+  -webkit-font-smoothing: antialiased;
 }
 
-/* Padding responsive */
-.section {
-  padding: 40px 16px;
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #0a0f1a; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+
+/* Inputs et selects sur fond sombre */
+input, select, textarea {
+  color-scheme: dark;
 }
 
-@media (min-width: 768px) {
-  .section {
-    padding: 60px 32px;
-  }
+/* Selection */
+::selection {
+  background: rgba(34,211,165,0.25);
+  color: #fff;
 }
-
-@media (min-width: 1024px) {
-  .section {
-    padding: 80px 64px;
-  }
-}
-
-/* Grid responsive */
-.grid-auto {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 16px;
-}
-
-/* Flex responsive */
-.flex-wrap-safe {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-}
-
-/* Texte responsive */
-.title {
-  font-size: clamp(24px, 5vw, 48px);
-}
-
-.subtitle {
-  font-size: clamp(14px, 3vw, 18px);
-}
-@media (max-width: 768px) {
-  div[style*="padding: '40px 48px'"] {
-    padding: 20px 16px !important;
-  }
+html, body {
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden; /* 🔥 empêche le débordement */
 }
