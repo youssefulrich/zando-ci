@@ -122,7 +122,7 @@ export default async function ResidenceDetailPage({ params }: { params: Promise<
                   { icon: '🛏️', value: `${residence.bedrooms}`, label: 'Chambres' },
                   { icon: '🚿', value: `${residence.bathrooms}`, label: 'SDB' },
                   { icon: '👥', value: `${residence.max_guests}`, label: 'Personnes max' },
-                  { icon: '📐', value: residence.surface_area ? `${residence.surface_area}m²` : '—', label: 'Surface' },
+                  { icon: '📐', value: (residence as any).surface ? `${(residence as any).surface}m²` : '—', label: 'Surface' },
                 ].map((s, i) => (
                   <div key={i} style={{
                     background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)',
