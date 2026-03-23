@@ -138,7 +138,7 @@ export default async function ResidenceDetailPage({ params }: { params: Promise<
               {/* Description */}
               {residence.description && (
                 <div style={{ marginBottom: 32 }}>
-                  <h2 style={{ fontSize: 16, fontWeight: 600, color: '#cbd5e1', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.08em', fontSize: 11 }}>
+                  <h2 style={{ fontSize: 16, fontWeight: 600, color: '#cbd5e1', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
                     Description
                   </h2>
                   <p style={{ color: '#94a3b8', lineHeight: 1.8, fontSize: 15 }}>
