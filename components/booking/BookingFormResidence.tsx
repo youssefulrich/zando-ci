@@ -54,9 +54,11 @@ export default function BookingFormResidence({
   const nights = getNightsCount()
   const totalPrice = getPrice()
   const commission = Math.round(totalPrice * COMMISSION_RATE)
+  const ownerAmount = totalPrice - commission
 
   async function handleSubmit() {
     setError('')
+
     if (!checkIn || !checkOut) { setError('Choisissez vos dates'); return }
     if (nights <= 0) { setError('Date de départ invalide'); return }
     if (guests < 1 || guests > maxGuests) { setError(`Maximum ${maxGuests} personnes`); return }
@@ -66,9 +68,22 @@ export default function BookingFormResidence({
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) { router.push('/login'); return }
 
-    const reference = `ZND-R-${Date.now()}`
-    const ownerAmount = totalPrice - commission
+    // Récupération du profil
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('full_name, phone')
+      .eq('id', user.id)
+      .single()
 
+    if (!profile || profileError) {
+      setError("Impossible de récupérer le profil")
+      setLoading(false)
+      return
+    }
+
+    const reference = `ZND-R-${Date.now()}`
+
+    // Insertion de la réservation
     const { data: booking, error: bookingError } = await supabase
       .from('bookings')
       .insert({
@@ -78,11 +93,13 @@ export default function BookingFormResidence({
         reference,
         start_date: checkIn,
         end_date: checkOut,
-        guests_count: guests,
+        tickets_count: guests,
         total_price: totalPrice,
         commission_amount: commission,
         owner_amount: ownerAmount,
         status: 'pending',
+        client_name: profile.full_name,
+        client_phone: profile.phone || '',
       })
       .select()
       .single()
@@ -126,6 +143,7 @@ export default function BookingFormResidence({
       borderRadius: 20,
       padding: 28,
     }}>
+      {/* Affichage du prix */}
       <div style={{ marginBottom: 24 }}>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
           <span style={{ fontSize: 28, fontWeight: 700, color: '#22d3a5' }}>
@@ -140,6 +158,7 @@ export default function BookingFormResidence({
         )}
       </div>
 
+      {/* Sélection des dates */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
         <div>
           <label style={labelStyle}>Arrivée</label>
@@ -155,6 +174,7 @@ export default function BookingFormResidence({
         </div>
       </div>
 
+      {/* Sélection des voyageurs */}
       <div style={{ marginBottom: 24 }}>
         <label style={labelStyle}>Voyageurs</label>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -173,6 +193,7 @@ export default function BookingFormResidence({
         </div>
       </div>
 
+      {/* Récapitulatif prix */}
       {nights > 0 && totalPrice > 0 && (
         <div style={{
           background: 'rgba(255,255,255,0.03)',
