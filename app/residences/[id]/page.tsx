@@ -178,8 +178,6 @@ export default async function ResidenceDetailPage({ params }: { params: Promise<
                 }}>
                   {[
                     { label: 'Prix par nuit', value: formatPrice(residence.price_per_night), accent: true },
-                    ...(residence.price_per_week ? [{ label: 'Prix par semaine', value: formatPrice(residence.price_per_week), accent: false }] : []),
-                    ...(residence.price_per_month ? [{ label: 'Prix par mois', value: formatPrice(residence.price_per_month), accent: false }] : []),
                   ].map((row, i) => (
                     <div key={i} style={{
                       display: 'flex', justifyContent: 'space-between', alignItems: 'center',
@@ -229,8 +227,6 @@ export default async function ResidenceDetailPage({ params }: { params: Promise<
               <BookingFormResidence
                 residenceId={residence.id}
                 pricePerNight={residence.price_per_night}
-                pricePerWeek={residence.price_per_week}
-                pricePerMonth={residence.price_per_month}
                 maxGuests={residence.max_guests}
               />
             </div>
