@@ -106,30 +106,30 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ reference: booking.reference })
     }
 
-    const geniusRes = await fetch('https://pay.genius.ci/api/v1/merchant/payments', {
-      method: 'POST',
-      headers: {
+    const geniusRes = await fetch(`${baseUrl}/api/v1/merchant/payments`, {
+    method: 'POST',
+    headers: {
         'X-API-Key': apiKey,
         'X-API-Secret': apiSecret,
         'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
+    },
+    body: JSON.stringify({
         amount: total,
         currency: 'XOF',
         description: `Réservation Zando CI — ${booking.reference}`,
         customer: {
-          name: profile.full_name,
-          phone: mobilePhone || profile.phone,
+        name: profile.full_name,
+        phone: mobilePhone || profile.phone,
         },
         metadata: {
-          booking_id: booking.id,
-          booking_reference: booking.reference,
-          commission_amount: commissionAmount,
-          owner_amount: ownerAmount,
+        booking_id: booking.id,
+        booking_reference: booking.reference,
+        commission_amount: commissionAmount,
+        owner_amount: ownerAmount,
         },
         success_url: `${appUrl}/paiement/succes?ref=${booking.reference}`,
         error_url: `${appUrl}/paiement/annulation?ref=${booking.reference}`,
-      }),
+    }),
     })
 
     const geniusData = await geniusRes.json()
