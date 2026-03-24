@@ -39,64 +39,65 @@ export default async function MesReservationsPage() {
   const passees   = bookings?.filter(b => b.status === 'completed' || (b.status === 'confirmed' && b.end_date && new Date(b.end_date) < now)) ?? []
   const annulees  = bookings?.filter(b => b.status === 'cancelled') ?? []
 
-  const card = {
-    background: '#111827',
-    border: '0.5px solid rgba(255,255,255,0.08)',
-    borderRadius: 14,
-    padding: '18px 20px',
-    display: 'flex',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    gap: 16,
-  }
-
   function BookingCard({ b }: { b: NonNullable<typeof bookings>[0] }) {
     const tc = TYPE_COLORS[b.item_type] ?? TYPE_COLORS.residence
     const ss = statusStyle(b.status)
     const payMethod = (b.payments as { payment_method?: string } | null)?.payment_method?.replace(/_/g, ' ') ?? null
 
     return (
-      <div style={card}>
-        {/* Icône type */}
-        <div style={{
-          width: 42, height: 42, borderRadius: 10, flexShrink: 0,
-          background: tc.bg, border: `0.5px solid ${tc.border}`,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 18, color: tc.color,
-        }}>
-          {TYPE_ICONS[b.item_type] ?? '◈'}
-        </div>
-
-        {/* Infos principales */}
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-            <span style={{ fontSize: 11, fontFamily: 'monospace', color: 'rgba(255,255,255,0.25)' }}>{b.reference}</span>
-            <span style={{
-              fontSize: 10, fontWeight: 600, padding: '2px 8px', borderRadius: 20,
-              background: ss.bg, color: ss.color, border: `0.5px solid ${ss.border}`,
-            }}>{ss.label}</span>
+      <div style={{
+        background: '#111827',
+        border: '0.5px solid rgba(255,255,255,0.08)',
+        borderRadius: 14,
+        padding: '16px',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14 }}>
+          {/* Icône */}
+          <div style={{
+            width: 40, height: 40, borderRadius: 10, flexShrink: 0,
+            background: tc.bg, border: `0.5px solid ${tc.border}`,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 17, color: tc.color,
+          }}>
+            {TYPE_ICONS[b.item_type] ?? '◈'}
           </div>
-          <p style={{ fontSize: 14, fontWeight: 600, color: '#fff', marginBottom: 4 }}>
-            {TYPE_LABELS[b.item_type] ?? b.item_type}
-          </p>
-          {b.start_date && b.end_date && (
-            <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)' }}>
-              {formatDate(b.start_date)} → {formatDate(b.end_date)}
-            </p>
-          )}
-          {b.tickets_count && (
-            <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)' }}>
-              {b.tickets_count} billet{b.tickets_count > 1 ? 's' : ''}
-            </p>
-          )}
-        </div>
 
-        {/* Prix + moyen de paiement */}
-        <div style={{ textAlign: 'right', flexShrink: 0 }}>
-          <p style={{ fontSize: 15, fontWeight: 800, color: '#fff', letterSpacing: -0.3 }}>{formatPrice(b.total_price)}</p>
-          {payMethod && (
-            <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', marginTop: 4, textTransform: 'capitalize' }}>{payMethod}</p>
-          )}
+          {/* Infos */}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, flexWrap: 'wrap' }}>
+              <span style={{ fontSize: 11, fontFamily: 'monospace', color: 'rgba(255,255,255,0.25)' }}>{b.reference}</span>
+              <span style={{
+                fontSize: 10, fontWeight: 600, padding: '2px 8px', borderRadius: 20,
+                background: ss.bg, color: ss.color, border: `0.5px solid ${ss.border}`,
+                whiteSpace: 'nowrap',
+              }}>{ss.label}</span>
+            </div>
+            <p style={{ fontSize: 14, fontWeight: 600, color: '#fff', marginBottom: 4 }}>
+              {TYPE_LABELS[b.item_type] ?? b.item_type}
+            </p>
+            {b.start_date && b.end_date && (
+              <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)' }}>
+                {formatDate(b.start_date)} → {formatDate(b.end_date)}
+              </p>
+            )}
+            {b.tickets_count && (
+              <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)' }}>
+                {b.tickets_count} billet{b.tickets_count > 1 ? 's' : ''}
+              </p>
+            )}
+          </div>
+
+          {/* Prix */}
+          <div style={{ textAlign: 'right', flexShrink: 0 }}>
+            <p style={{ fontSize: 15, fontWeight: 800, color: '#fff', letterSpacing: -0.3, whiteSpace: 'nowrap' }}>
+              {formatPrice(b.total_price)}
+            </p>
+            {payMethod && (
+              <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', marginTop: 4, textTransform: 'capitalize' }}>
+                {payMethod}
+              </p>
+            )}
+          </div>
         </div>
       </div>
     )
@@ -136,49 +137,59 @@ export default async function MesReservationsPage() {
   }
 
   return (
-    <div style={{ background: '#0a0f1a', minHeight: '100vh' }}>
-      <Navbar />
-      <div style={{ maxWidth: 780, margin: '0 auto', padding: '48px 24px' }}>
+    <>
+      <style>{`
+        .mr-wrap { max-width: 780px; margin: 0 auto; padding: 48px 24px; }
+        .mr-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 40px; }
 
-        {/* Header */}
-        <div style={{ marginBottom: 40 }}>
-          <div style={{ fontSize: 11, color: '#22d3a5', textTransform: 'uppercase', letterSpacing: 2, fontWeight: 600, marginBottom: 8 }}>
-            Mon espace
-          </div>
-          <h1 style={{ fontSize: 28, fontWeight: 800, color: '#fff', letterSpacing: -0.8, marginBottom: 4 }}>
-            Mes réservations
-          </h1>
-          <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.35)' }}>
-            {bookings?.length ?? 0} réservation{(bookings?.length ?? 0) > 1 ? 's' : ''} au total
-          </p>
-        </div>
+        @media (max-width: 767px) {
+          .mr-wrap { padding: 24px 16px; }
+          .mr-stats { grid-template-columns: repeat(2, 1fr); }
+          .mr-title { font-size: 24px !important; }
+        }
+      `}</style>
 
-        {/* Résumé rapide */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 40 }}>
-          {[
-            { label: 'En cours', count: enCours.length, color: '#22d3a5', bg: 'rgba(34,211,165,0.08)', border: 'rgba(34,211,165,0.15)' },
-            { label: 'En attente', count: enAttente.length, color: '#fbbf24', bg: 'rgba(251,191,36,0.08)', border: 'rgba(251,191,36,0.15)' },
-            { label: 'Passées', count: passees.length, color: 'rgba(255,255,255,0.4)', bg: 'rgba(255,255,255,0.03)', border: 'rgba(255,255,255,0.06)' },
-            { label: 'Annulées', count: annulees.length, color: '#f87171', bg: 'rgba(248,113,113,0.08)', border: 'rgba(248,113,113,0.15)' },
-          ].map(s => (
-            <div key={s.label} style={{
-              background: s.bg, border: `0.5px solid ${s.border}`,
-              borderRadius: 12, padding: '16px',
-            }}>
-              <p style={{ fontSize: 22, fontWeight: 800, color: s.color, letterSpacing: -0.5 }}>{s.count}</p>
-              <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginTop: 4 }}>{s.label}</p>
+      <div style={{ background: '#0a0f1a', minHeight: '100vh' }}>
+        <Navbar />
+        <div className="mr-wrap">
+
+          {/* Header */}
+          <div style={{ marginBottom: 40 }}>
+            <div style={{ fontSize: 11, color: '#22d3a5', textTransform: 'uppercase', letterSpacing: 2, fontWeight: 600, marginBottom: 8 }}>
+              Mon espace
             </div>
-          ))}
-        </div>
+            <h1 className="mr-title" style={{ fontSize: 28, fontWeight: 800, color: '#fff', letterSpacing: -0.8, marginBottom: 4 }}>
+              Mes réservations
+            </h1>
+            <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.35)' }}>
+              {bookings?.length ?? 0} réservation{(bookings?.length ?? 0) > 1 ? 's' : ''} au total
+            </p>
+          </div>
 
-        {/* Sections */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 36 }}>
-          <Section title="En cours" items={enCours} empty="Aucune réservation en cours" accent="#22d3a5" />
-          <Section title="En attente de paiement" items={enAttente} empty="Aucune réservation en attente" accent="#fbbf24" />
-          <Section title="Passées" items={passees} empty="Aucune réservation passée" accent="rgba(255,255,255,0.4)" />
-          <Section title="Annulées" items={annulees} empty="Aucune réservation annulée" accent="#f87171" />
+          {/* Résumé */}
+          <div className="mr-stats">
+            {[
+              { label: 'En cours', count: enCours.length, color: '#22d3a5', bg: 'rgba(34,211,165,0.08)', border: 'rgba(34,211,165,0.15)' },
+              { label: 'En attente', count: enAttente.length, color: '#fbbf24', bg: 'rgba(251,191,36,0.08)', border: 'rgba(251,191,36,0.15)' },
+              { label: 'Passées', count: passees.length, color: 'rgba(255,255,255,0.4)', bg: 'rgba(255,255,255,0.03)', border: 'rgba(255,255,255,0.06)' },
+              { label: 'Annulées', count: annulees.length, color: '#f87171', bg: 'rgba(248,113,113,0.08)', border: 'rgba(248,113,113,0.15)' },
+            ].map(s => (
+              <div key={s.label} style={{ background: s.bg, border: `0.5px solid ${s.border}`, borderRadius: 12, padding: '16px' }}>
+                <p style={{ fontSize: 22, fontWeight: 800, color: s.color, letterSpacing: -0.5 }}>{s.count}</p>
+                <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginTop: 4 }}>{s.label}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Sections */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 36 }}>
+            <Section title="En cours" items={enCours} empty="Aucune réservation en cours" accent="#22d3a5" />
+            <Section title="En attente de paiement" items={enAttente} empty="Aucune réservation en attente" accent="#fbbf24" />
+            <Section title="Passées" items={passees} empty="Aucune réservation passée" accent="rgba(255,255,255,0.4)" />
+            <Section title="Annulées" items={annulees} empty="Aucune réservation annulée" accent="#f87171" />
+          </div>
         </div>
       </div>
-    </div>
+    </>
   )
 }
