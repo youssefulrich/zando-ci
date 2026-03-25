@@ -98,7 +98,7 @@ export async function POST(req: NextRequest) {
     })
 
     const apiKey = process.env.GENIUS_PAY_API_KEY
-    const apiSecret = process.env.GENIUS_PAY_SECRET
+    const apiSecret = process.env.GENIUS_PAY_API_SECRET
     const appUrl = process.env.NEXT_PUBLIC_APP_URL
 
     if (!apiKey || !apiSecret) {
