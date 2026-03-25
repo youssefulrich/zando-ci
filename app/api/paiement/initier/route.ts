@@ -106,8 +106,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ reference: booking.reference })
     }
 
-    const geniusRes = await fetch('https://pay.genius.ci/api/v1/merchant/payments', {
-      method: 'POST',
+
+    const baseUrl = process.env.GENIUS_PAY_BASE_URL ?? 'https://pay.genius.ci'
+    const geniusRes = await fetch(`${baseUrl}/api/v1/merchant/payments`, {      method: 'POST',
       headers: {
         'X-API-Key': apiKey,
         'X-API-Secret': apiSecret,
