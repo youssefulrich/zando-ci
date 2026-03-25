@@ -3,37 +3,32 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 const COMMISSION_RATE = 0.10
+const GENIUS_PAY_BASE_URL = 'https://pay.genius.ci/api/v1/merchant'
 
 export async function POST(req: NextRequest) {
   try {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
-
-    if (!user) {
-      return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
-    }
+    if (!user) return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
 
     const body = await req.json()
-    const { itemType, itemId, startDate, endDate, ticketsCount, total, paymentMethod, mobilePhone } = body
+    const { itemType, itemId, startDate, endDate, ticketsCount, total, mobilePhone } = body
+    // Note: on ignore paymentMethod — on laisse Genius Pay afficher sa page checkout
 
     const { data: profileRaw } = await supabase
       .from('profiles')
       .select('full_name, phone')
       .eq('id', user.id)
       .single()
-
     const profile = profileRaw as { full_name: string; phone: string } | null
 
-    if (!profile) {
-      return NextResponse.json({ error: 'Profil introuvable' }, { status: 400 })
-    }
+    if (!profile) return NextResponse.json({ error: 'Profil introuvable' }, { status: 400 })
 
     const admin = createAdminClient() as any
-
     const commissionAmount = Math.round(total * COMMISSION_RATE)
     const ownerAmount = total - commissionAmount
 
-    // Vérifications (inchangées)
+    // Vérifier disponibilité résidences/véhicules
     if (itemType === 'residence' || itemType === 'vehicle') {
       const { data: conflictRaw } = await admin
         .from('bookings')
@@ -42,30 +37,30 @@ export async function POST(req: NextRequest) {
         .in('status', ['pending', 'confirmed'])
         .or(`and(start_date.lte.${endDate},end_date.gte.${startDate})`)
         .limit(1)
+      const conflict = conflictRaw as any[] | null
 
-      if (conflictRaw && conflictRaw.length > 0) {
+      if (conflict && conflict.length > 0) {
         return NextResponse.json({ error: 'Ces dates ne sont plus disponibles' }, { status: 409 })
       }
     }
 
+    // Vérifier stock événements
     if (itemType === 'event') {
       const { data: eventRaw } = await admin
         .from('events')
         .select('total_capacity, tickets_sold')
         .eq('id', itemId)
         .single()
-
       const event = eventRaw as { total_capacity: number; tickets_sold: number } | null
 
       if (!event) return NextResponse.json({ error: 'Événement introuvable' }, { status: 404 })
-
       if (event.total_capacity - event.tickets_sold < ticketsCount) {
-        return NextResponse.json({ error: 'Stock insuffisant' }, { status: 409 })
+        return NextResponse.json({ error: 'Stock de billets insuffisant' }, { status: 409 })
       }
     }
 
-    // Création réservation
-    const { data: booking, error: bookingError } = await admin
+    // Créer la réservation
+    const { data: bookingRaw, error: bookingError } = await admin
       .from('bookings')
       .insert({
         user_id: user.id,
@@ -84,11 +79,14 @@ export async function POST(req: NextRequest) {
       })
       .select()
       .single()
+    const booking = bookingRaw as any
 
     if (bookingError || !booking) {
+      console.error('Erreur création réservation:', bookingError)
       return NextResponse.json({ error: 'Erreur création réservation' }, { status: 500 })
     }
 
+    // Créer l'entrée paiement
     await admin.from('payments').insert({
       booking_id: booking.id,
       amount: total,
@@ -96,23 +94,20 @@ export async function POST(req: NextRequest) {
       owner_amount: ownerAmount,
       currency: 'XOF',
       status: 'pending',
-      payment_method: paymentMethod,
-      mobile_phone: mobilePhone,
+      mobile_phone: mobilePhone || profile.phone || null,
     })
 
-    // ✅ CONFIG GENIUS PAY
     const apiKey = process.env.GENIUS_PAY_API_KEY
     const apiSecret = process.env.GENIUS_PAY_API_SECRET
-    const baseUrl = process.env.GENIUS_PAY_BASE_URL || 'https://pay.genius.ci'
     const appUrl = process.env.NEXT_PUBLIC_APP_URL
 
     if (!apiKey || !apiSecret) {
-      console.error('ENV manquantes')
-      return NextResponse.json({ error: 'Config paiement invalide' }, { status: 500 })
+      console.warn('Genius Pay non configuré — mode dev')
+      return NextResponse.json({ reference: booking.reference })
     }
 
-    // ✅ APPEL API
-    const geniusRes = await fetch(`${baseUrl}/api/v1/merchant/payments`, {
+    // Appel Genius Pay — sans payment_method = page checkout avec choix du moyen
+    const geniusRes = await fetch(`${GENIUS_PAY_BASE_URL}/payments`, {
       method: 'POST',
       headers: {
         'X-API-Key': apiKey,
@@ -122,7 +117,7 @@ export async function POST(req: NextRequest) {
       body: JSON.stringify({
         amount: total,
         currency: 'XOF',
-        description: `Réservation Zando CI — ${booking.reference}`,
+        description: `Réservation ZandoCI — ${booking.reference}`,
         customer: {
           name: profile.full_name,
           phone: mobilePhone || profile.phone,
@@ -130,37 +125,50 @@ export async function POST(req: NextRequest) {
         metadata: {
           booking_id: booking.id,
           booking_reference: booking.reference,
+          commission_amount: commissionAmount,
+          owner_amount: ownerAmount,
         },
         success_url: `${appUrl}/paiement/succes?ref=${booking.reference}`,
         error_url: `${appUrl}/paiement/annulation?ref=${booking.reference}`,
-        cancel_url: `${appUrl}/paiement/annulation?ref=${booking.reference}`, // 🔥 OBLIGATOIRE
-
+        // Pas de payment_method → Genius Pay affiche sa page checkout
       }),
     })
 
-    // ✅ FIX ERREUR HTML
-    const text = await geniusRes.text()
+    // Lire la réponse en texte d'abord pour éviter l'erreur JSON
+    const responseText = await geniusRes.text()
+    let geniusData: any
 
-    let geniusData
     try {
-      geniusData = JSON.parse(text)
+      geniusData = JSON.parse(responseText)
     } catch {
-      console.error('Réponse non JSON:', text)
-      return NextResponse.json({ error: 'Mauvaise réponse Genius Pay' }, { status: 500 })
+      console.error('Réponse non-JSON de Genius Pay:', responseText.slice(0, 300))
+      await admin.from('bookings').update({ status: 'cancelled' }).eq('id', booking.id)
+      await admin.from('payments').update({ status: 'failed' }).eq('booking_id', booking.id)
+      return NextResponse.json({ error: 'Erreur Genius Pay — réponse invalide' }, { status: 500 })
     }
 
-    console.log('Genius Pay response:', geniusData)
+    console.log('Genius Pay response:', JSON.stringify(geniusData, null, 2))
 
     if (!geniusRes.ok || !geniusData.success) {
-      return NextResponse.json({ error: geniusData.message || 'Erreur paiement' }, { status: 400 })
+      console.error('Genius Pay error:', geniusData)
+      await admin.from('bookings').update({ status: 'cancelled' }).eq('id', booking.id)
+      await admin.from('payments').update({ status: 'failed' }).eq('booking_id', booking.id)
+      return NextResponse.json({ error: geniusData.message || 'Erreur Genius Pay' }, { status: 400 })
     }
 
-    const redirectUrl =
-      geniusData.data?.checkout_url ||
-      geniusData.data?.payment_url
+    // checkout_url quand pas de payment_method, payment_url quand méthode spécifiée
+    const redirectUrl = geniusData.data?.checkout_url || geniusData.data?.payment_url
+    const geniusPayId = String(geniusData.data?.id ?? '')
+
+    if (!redirectUrl) {
+      console.error('Pas d\'URL de redirection dans la réponse:', geniusData)
+      await admin.from('bookings').update({ status: 'cancelled' }).eq('id', booking.id)
+      await admin.from('payments').update({ status: 'failed' }).eq('booking_id', booking.id)
+      return NextResponse.json({ error: 'URL de paiement manquante' }, { status: 500 })
+    }
 
     await admin.from('payments').update({
-      genius_pay_id: geniusData.data?.id,
+      genius_pay_id: geniusPayId,
       payment_url: redirectUrl,
       status: 'processing',
     }).eq('booking_id', booking.id)
@@ -168,6 +176,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       payment_url: redirectUrl,
       reference: booking.reference,
+      breakdown: { total, commission: commissionAmount, owner_receives: ownerAmount }
     })
 
   } catch (err) {
