@@ -127,8 +127,14 @@ export async function POST(req: NextRequest) {
           name: profile.full_name,
           phone: mobilePhone || profile.phone,
         },
+        metadata: {
+          booking_id: booking.id,
+          booking_reference: booking.reference,
+        },
         success_url: `${appUrl}/paiement/succes?ref=${booking.reference}`,
         error_url: `${appUrl}/paiement/annulation?ref=${booking.reference}`,
+        cancel_url: `${appUrl}/paiement/annulation?ref=${booking.reference}`, // 🔥 OBLIGATOIRE
+
       }),
     })
 
