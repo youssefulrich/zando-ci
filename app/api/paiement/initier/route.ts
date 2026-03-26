@@ -101,6 +101,12 @@ export async function POST(req: NextRequest) {
     const apiSecret = process.env.GENIUS_PAY_API_SECRET
     const appUrl = process.env.NEXT_PUBLIC_APP_URL
 
+
+
+    console.log('=== DEBUG CLÉS ===')
+    console.log('API Key:', apiKey ? apiKey.slice(0, 15) + '...' : 'UNDEFINED')
+    console.log('API Secret:', apiSecret ? apiSecret.slice(0, 15) + '...' : 'UNDEFINED')
+    console.log('App URL:', process.env.NEXT_PUBLIC_APP_URL)
     if (!apiKey || !apiSecret) {
       console.warn('Genius Pay non configuré — mode dev')
       return NextResponse.json({ reference: booking.reference })
@@ -109,6 +115,8 @@ export async function POST(req: NextRequest) {
     // Appel Genius Pay — sans payment_method = page checkout avec choix du moyen
     const geniusRes = await fetch(`${GENIUS_PAY_BASE_URL}/payments`, {
       method: 'POST',
+      redirect: 'manual', // ← AJOUTEZ
+
       headers: {
         'X-API-Key': apiKey,
         'X-API-Secret': apiSecret,
