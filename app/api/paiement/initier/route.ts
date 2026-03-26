@@ -3,9 +3,13 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 const COMMISSION_RATE = 0.10
-const GENIUS_PAY_BASE_URL = 'https://pay.genius.ci/api/v1/merchant'
+// ✅ URL correcte — labpay.genius.ci est le vrai endpoint API
+const GENIUS_PAY_BASE_URL = 'https://labpay.genius.ci/api/v1/merchant'
 
 export async function POST(req: NextRequest) {
+  const admin = createAdminClient() as any
+  let booking: any = null
+
   try {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
@@ -13,7 +17,6 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json()
     const { itemType, itemId, startDate, endDate, ticketsCount, total, mobilePhone } = body
-    // Note: on ignore paymentMethod — on laisse Genius Pay afficher sa page checkout
 
     const { data: profileRaw } = await supabase
       .from('profiles')
@@ -24,7 +27,6 @@ export async function POST(req: NextRequest) {
 
     if (!profile) return NextResponse.json({ error: 'Profil introuvable' }, { status: 400 })
 
-    const admin = createAdminClient() as any
     const commissionAmount = Math.round(total * COMMISSION_RATE)
     const ownerAmount = total - commissionAmount
 
@@ -59,6 +61,22 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // ✅ Vérifier les clés AVANT de créer la réservation
+    const apiKey = process.env.GENIUS_PAY_API_KEY
+    const apiSecret = process.env.GENIUS_PAY_API_SECRET
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL
+
+    console.log('=== DEBUG CLÉS ===')
+    console.log('API Key:', apiKey ? apiKey.slice(0, 20) + '...' : 'UNDEFINED')
+    console.log('API Secret:', apiSecret ? apiSecret.slice(0, 20) + '...' : 'UNDEFINED')
+    console.log('App URL:', appUrl)
+    console.log('Base URL:', GENIUS_PAY_BASE_URL)
+
+    if (!apiKey || !apiSecret) {
+      console.warn('Genius Pay non configuré')
+      return NextResponse.json({ error: 'Paiement non configuré — contactez le support' }, { status: 500 })
+    }
+
     // Créer la réservation
     const { data: bookingRaw, error: bookingError } = await admin
       .from('bookings')
@@ -79,7 +97,7 @@ export async function POST(req: NextRequest) {
       })
       .select()
       .single()
-    const booking = bookingRaw as any
+    booking = bookingRaw as any
 
     if (bookingError || !booking) {
       console.error('Erreur création réservation:', bookingError)
@@ -97,74 +115,82 @@ export async function POST(req: NextRequest) {
       mobile_phone: mobilePhone || profile.phone || null,
     })
 
-    const apiKey = process.env.GENIUS_PAY_API_KEY
-    const apiSecret = process.env.GENIUS_PAY_API_SECRET
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL
-
-
-
-    console.log('=== DEBUG CLÉS ===')
-    console.log('API Key:', apiKey ? apiKey.slice(0, 15) + '...' : 'UNDEFINED')
-    console.log('API Secret:', apiSecret ? apiSecret.slice(0, 15) + '...' : 'UNDEFINED')
-    console.log('App URL:', process.env.NEXT_PUBLIC_APP_URL)
-    if (!apiKey || !apiSecret) {
-      console.warn('Genius Pay non configuré — mode dev')
-      return NextResponse.json({ reference: booking.reference })
+    // ✅ Appel Genius Pay avec redirect: 'follow' pour suivre les redirects normalement
+    const requestBody = {
+      amount: total,
+      currency: 'XOF',
+      description: `Réservation ZandoCI — ${booking.reference}`,
+      customer: {
+        name: profile.full_name,
+        phone: mobilePhone || profile.phone,
+        country: 'CI',
+      },
+      metadata: {
+        booking_id: booking.id,
+        booking_reference: booking.reference,
+        commission_amount: commissionAmount,
+        owner_amount: ownerAmount,
+      },
+      success_url: `${appUrl}/paiement/succes?ref=${booking.reference}`,
+      error_url: `${appUrl}/paiement/annulation?ref=${booking.reference}`,
     }
 
-    // Appel Genius Pay — sans payment_method = page checkout avec choix du moyen
+    console.log('=== APPEL GENIUS PAY ===')
+    console.log('URL:', `${GENIUS_PAY_BASE_URL}/payments`)
+    console.log('Body:', JSON.stringify(requestBody, null, 2))
+
     const geniusRes = await fetch(`${GENIUS_PAY_BASE_URL}/payments`, {
       method: 'POST',
-      redirect: 'manual', // ← AJOUTEZ
-
+      redirect: 'follow', // ✅ follow au lieu de manual
       headers: {
         'X-API-Key': apiKey,
         'X-API-Secret': apiSecret,
         'Content-Type': 'application/json',
+        'Accept': 'application/json',
       },
-      body: JSON.stringify({
-        amount: total,
-        currency: 'XOF',
-        description: `Réservation ZandoCI — ${booking.reference}`,
-        customer: {
-          name: profile.full_name,
-          phone: mobilePhone || profile.phone,
-        },
-        metadata: {
-          booking_id: booking.id,
-          booking_reference: booking.reference,
-          commission_amount: commissionAmount,
-          owner_amount: ownerAmount,
-        },
-        success_url: `${appUrl}/paiement/succes?ref=${booking.reference}`,
-        error_url: `${appUrl}/paiement/annulation?ref=${booking.reference}`,
-        // Pas de payment_method → Genius Pay affiche sa page checkout
-      }),
+      body: JSON.stringify(requestBody),
     })
 
-    // Lire la réponse en texte d'abord pour éviter l'erreur JSON
-    const responseText = await geniusRes.text()
-    let geniusData: any
+    console.log('=== RÉPONSE GENIUS PAY ===')
+    console.log('Status HTTP:', geniusRes.status)
+    console.log('Status Text:', geniusRes.statusText)
+    console.log('Content-Type:', geniusRes.headers.get('content-type'))
 
+    const responseText = await geniusRes.text()
+    console.log('Réponse brute (500 chars):', responseText.slice(0, 500))
+
+    // ✅ Vérifier que c'est du JSON avant de parser
+    const contentType = geniusRes.headers.get('content-type') ?? ''
+    if (!contentType.includes('application/json')) {
+      console.error('Genius Pay a retourné du non-JSON — statut:', geniusRes.status)
+      await admin.from('bookings').update({ status: 'cancelled' }).eq('id', booking.id)
+      await admin.from('payments').update({ status: 'failed' }).eq('booking_id', booking.id)
+      return NextResponse.json({
+        error: `Erreur Genius Pay (HTTP ${geniusRes.status}) — réponse non-JSON`
+      }, { status: 500 })
+    }
+
+    let geniusData: any
     try {
       geniusData = JSON.parse(responseText)
     } catch {
-      console.error('Réponse non-JSON de Genius Pay:', responseText.slice(0, 300))
+      console.error('Impossible de parser la réponse JSON:', responseText.slice(0, 300))
       await admin.from('bookings').update({ status: 'cancelled' }).eq('id', booking.id)
       await admin.from('payments').update({ status: 'failed' }).eq('booking_id', booking.id)
       return NextResponse.json({ error: 'Erreur Genius Pay — réponse invalide' }, { status: 500 })
     }
 
-    console.log('Genius Pay response:', JSON.stringify(geniusData, null, 2))
+    console.log('Genius Pay JSON:', JSON.stringify(geniusData, null, 2))
 
     if (!geniusRes.ok || !geniusData.success) {
       console.error('Genius Pay error:', geniusData)
       await admin.from('bookings').update({ status: 'cancelled' }).eq('id', booking.id)
       await admin.from('payments').update({ status: 'failed' }).eq('booking_id', booking.id)
-      return NextResponse.json({ error: geniusData.message || 'Erreur Genius Pay' }, { status: 400 })
+      return NextResponse.json({
+        error: geniusData.message || geniusData.error?.message || 'Erreur Genius Pay'
+      }, { status: 400 })
     }
 
-    // checkout_url quand pas de payment_method, payment_url quand méthode spécifiée
     const redirectUrl = geniusData.data?.checkout_url || geniusData.data?.payment_url
     const geniusPayId = String(geniusData.data?.id ?? '')
 
@@ -181,6 +207,8 @@ export async function POST(req: NextRequest) {
       status: 'processing',
     }).eq('booking_id', booking.id)
 
+    console.log('✅ Paiement initié:', booking.reference, '→', redirectUrl)
+
     return NextResponse.json({
       payment_url: redirectUrl,
       reference: booking.reference,
@@ -189,6 +217,11 @@ export async function POST(req: NextRequest) {
 
   } catch (err) {
     console.error('Erreur initiation paiement:', err)
+    // ✅ Annuler la réservation si elle a été créée
+    if (booking?.id) {
+      await admin.from('bookings').update({ status: 'cancelled' }).eq('id', booking.id)
+      await admin.from('payments').update({ status: 'failed' }).eq('booking_id', booking.id)
+    }
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
 }
