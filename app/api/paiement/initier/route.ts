@@ -4,7 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 
 const COMMISSION_RATE = 0.10
 // ✅ URL correcte — labpay.genius.ci est le vrai endpoint API
-const GENIUS_PAY_BASE_URL = 'https://labpay.genius.ci/api/v1/merchant'
+const GENIUS_PAY_BASE_URL = 'https://pay.genius.ci/api/v1/merchant'
 
 export async function POST(req: NextRequest) {
   const admin = createAdminClient() as any
