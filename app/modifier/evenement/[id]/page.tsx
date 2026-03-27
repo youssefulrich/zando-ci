@@ -24,37 +24,51 @@ export default function ModifierEvenementPage() {
   const [success, setSuccess] = useState(false)
   const [data, setData] = useState({
     title: '', category: 'concert', description: '',
-    event_date: '', event_time: '', end_date: '', end_time: '',
-    venue_name: '', venue_address: '', 
-    ticket_price: '', total_tickets: '', main_photo: '',
+    event_date: '', event_time: '', venue_name: '', venue_address: '',
+    ticket_price: '', total_tickets: '',
   })
+
+  // Photo state
+  const [currentPhoto, setCurrentPhoto] = useState<string | null>(null) // URL existante
+  const [newPhotoFile, setNewPhotoFile] = useState<File | null>(null)   // Nouveau fichier
+  const [newPhotoPreview, setNewPhotoPreview] = useState<string | null>(null)
+  const [uploadingPhoto, setUploadingPhoto] = useState(false)
 
   useEffect(() => {
     const supabase = createClient() as any
     supabase.from('events').select('*').eq('id', id).single().then(({ data: e }: any) => {
       if (e) {
-        const startDate = e.event_date ? e.event_date.split('T')[0] : ''
-        const startTime = e.event_time ? e.event_time.slice(0, 5) : '20:00'
         setData({
           title: e.title ?? '',
           category: e.category ?? 'concert',
           description: e.description ?? '',
-          event_date: startDate,
-          event_time: startTime,
-          end_date: '',
-          end_time: '23:00',
+          event_date: e.event_date ? e.event_date.split('T')[0] : '',
+          event_time: e.event_time ? e.event_time.slice(0, 5) : '20:00',
           venue_name: e.venue_name ?? '',
           venue_address: e.venue_address ?? '',
           ticket_price: e.price_per_ticket ?? '',
           total_tickets: e.total_capacity ?? '',
-          main_photo: e.main_photo ?? '',
         })
+        setCurrentPhoto(e.main_photo ?? null)
       }
       setLoading(false)
     })
   }, [id])
 
   function set(field: string, value: unknown) { setData(prev => ({ ...prev, [field]: value })) }
+
+  function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setNewPhotoFile(file)
+    setNewPhotoPreview(URL.createObjectURL(file))
+  }
+
+  function removePhoto() {
+    setNewPhotoFile(null)
+    setNewPhotoPreview(null)
+    setCurrentPhoto(null)
+  }
 
   async function handleSave() {
     setError('')
@@ -64,8 +78,24 @@ export default function ModifierEvenementPage() {
     }
     setSaving(true)
     const supabase = createClient() as any
-    const eventDatetime = `${data.event_date}T${data.event_time || '20:00'}:00`
+    const { data: { user } } = await supabase.auth.getUser()
 
+    let finalPhotoUrl = currentPhoto
+
+    // Upload nouvelle photo si sélectionnée
+    if (newPhotoFile && user) {
+      setUploadingPhoto(true)
+      const ext = newPhotoFile.name.split('.').pop()
+      const path = `${user.id}/${Date.now()}.${ext}`
+      const { error: uploadError } = await supabase.storage.from('events').upload(path, newPhotoFile)
+      if (!uploadError) {
+        const { data: urlData } = supabase.storage.from('events').getPublicUrl(path)
+        finalPhotoUrl = urlData.publicUrl
+      }
+      setUploadingPhoto(false)
+    }
+
+    const eventDatetime = `${data.event_date}T${data.event_time || '20:00'}:00`
     const { error: err } = await supabase.from('events').update({
       title: data.title,
       category: data.category,
@@ -76,7 +106,7 @@ export default function ModifierEvenementPage() {
       venue_address: data.venue_address,
       price_per_ticket: Number(data.ticket_price),
       total_capacity: Number(data.total_tickets),
-      main_photo: data.main_photo || null,
+      main_photo: finalPhotoUrl,
     }).eq('id', id)
 
     if (err) { setError('Erreur lors de la sauvegarde'); setSaving(false); return }
@@ -104,6 +134,8 @@ export default function ModifierEvenementPage() {
       <p style={{ color: '#64748b' }}>Chargement...</p>
     </div>
   )
+
+  const displayPhoto = newPhotoPreview ?? currentPhoto
 
   return (
     <div style={{ background: '#0a0f1a', minHeight: '100vh', color: '#e2e8f0' }}>
@@ -186,12 +218,46 @@ export default function ModifierEvenementPage() {
 
         {/* Photo */}
         <div style={sectionStyle}>
-          <h2 style={{ fontSize: 13, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 20 }}>Photo principale (URL)</h2>
-          <input style={inputStyle} value={data.main_photo} onChange={e => set('main_photo', e.target.value)} placeholder="https://..." />
-          {data.main_photo && (
-            <div style={{ marginTop: 12, width: 160, height: 100, borderRadius: 8, overflow: 'hidden' }}>
-              <img src={data.main_photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          <h2 style={{ fontSize: 13, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 20 }}>Photo principale</h2>
+
+          {displayPhoto ? (
+            <div style={{ position: 'relative', display: 'inline-block' }}>
+              <img src={displayPhoto} alt="" style={{ width: 200, height: 130, objectFit: 'cover', borderRadius: 12, display: 'block' }} />
+              <div style={{ position: 'absolute', top: 8, right: 8, display: 'flex', gap: 6 }}>
+                {/* Bouton changer */}
+                <label style={{
+                  padding: '6px 12px', borderRadius: 8, cursor: 'pointer', fontSize: 11, fontWeight: 600,
+                  background: 'rgba(167,139,250,0.9)', color: '#fff', backdropFilter: 'blur(4px)',
+                }}>
+                  Changer
+                  <input type="file" accept="image/*" onChange={handlePhotoChange} style={{ display: 'none' }} />
+                </label>
+                {/* Bouton supprimer */}
+                <button onClick={removePhoto} style={{
+                  padding: '6px 10px', borderRadius: 8, cursor: 'pointer', fontSize: 11, fontWeight: 600,
+                  background: 'rgba(239,68,68,0.9)', color: '#fff', border: 'none', backdropFilter: 'blur(4px)',
+                }}>✕</button>
+              </div>
+              {newPhotoPreview && (
+                <div style={{ position: 'absolute', bottom: 8, left: 8, background: 'rgba(167,139,250,0.9)', borderRadius: 6, padding: '3px 8px', fontSize: 10, color: '#fff', fontWeight: 600 }}>
+                  Nouvelle photo
+                </div>
+              )}
             </div>
+          ) : (
+            <label style={{
+              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+              gap: 8, padding: '32px 20px', cursor: 'pointer',
+              background: 'rgba(167,139,250,0.04)', border: '1px dashed rgba(167,139,250,0.25)',
+              borderRadius: 14,
+            }}>
+              <div style={{ fontSize: 32, color: 'rgba(167,139,250,0.4)' }}>🖼️</div>
+              <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', textAlign: 'center', margin: 0 }}>
+                Cliquez pour ajouter une photo
+              </p>
+              <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.2)', margin: 0 }}>JPG, PNG</p>
+              <input type="file" accept="image/*" onChange={handlePhotoChange} style={{ display: 'none' }} />
+            </label>
           )}
         </div>
 
@@ -207,7 +273,7 @@ export default function ModifierEvenementPage() {
             flex: 1, padding: '14px', borderRadius: 12, border: 'none',
             background: saving ? 'rgba(167,139,250,0.3)' : 'linear-gradient(135deg, #a78bfa, #7c3aed)',
             color: saving ? '#64748b' : '#fff', fontWeight: 700, fontSize: 15, cursor: saving ? 'wait' : 'pointer',
-          }}>{saving ? 'Sauvegarde...' : 'Enregistrer les modifications'}</button>
+          }}>{saving ? (uploadingPhoto ? 'Upload photo...' : 'Sauvegarde...') : 'Enregistrer les modifications'}</button>
         </div>
       </div>
     </div>

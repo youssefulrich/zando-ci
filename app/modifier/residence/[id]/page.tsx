@@ -25,23 +25,30 @@ export default function ModifierResidencePage() {
   const [data, setData] = useState({
     title: '', type: 'apartment', description: '', address: '',
     city: 'Abidjan', bedrooms: 1, bathrooms: 1, max_guests: 2,
-    surface: '', price_per_night: '',
-    amenities: [] as string[], photos: [] as string[],
+    surface: '', price_per_night: '', amenities: [] as string[],
   })
+
+  // Photos state
+  const [existingPhotos, setExistingPhotos] = useState<string[]>([])  // URLs Supabase existantes
+  const [newFiles, setNewFiles] = useState<File[]>([])                // Nouveaux fichiers
+  const [newPreviews, setNewPreviews] = useState<string[]>([])        // Previews nouveaux fichiers
+  const [mainPhotoIndex, setMainPhotoIndex] = useState(0)             // Index dans le tableau final
+  const [uploadingPhotos, setUploadingPhotos] = useState(false)
 
   useEffect(() => {
     const supabase = createClient() as any
     supabase.from('residences').select('*').eq('id', id).single().then(({ data: r }: any) => {
-      if (r) setData({
-        title: r.title ?? '', type: r.type ?? 'apartment',
-        description: r.description ?? '', address: r.address ?? '',
-        city: r.city ?? 'Abidjan', bedrooms: r.bedrooms ?? 1,
-        bathrooms: r.bathrooms ?? 1, max_guests: r.max_guests ?? 2,
-        surface: r.surface ?? '',
-        price_per_night: r.price_per_night ?? '',
-        amenities: Array.isArray(r.amenities) ? r.amenities : [],
-        photos: Array.isArray(r.photos) ? r.photos : [],
-      })
+      if (r) {
+        setData({
+          title: r.title ?? '', type: r.type ?? 'apartment',
+          description: r.description ?? '', address: r.address ?? '',
+          city: r.city ?? 'Abidjan', bedrooms: r.bedrooms ?? 1,
+          bathrooms: r.bathrooms ?? 1, max_guests: r.max_guests ?? 2,
+          surface: r.surface ?? '', price_per_night: r.price_per_night ?? '',
+          amenities: Array.isArray(r.amenities) ? r.amenities : [],
+        })
+        setExistingPhotos(Array.isArray(r.photos) ? r.photos : (r.main_photo ? [r.main_photo] : []))
+      }
       setLoading(false)
     })
   }, [id])
@@ -55,18 +62,58 @@ export default function ModifierResidencePage() {
     }))
   }
 
+  function handleNewPhotos(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? []).slice(0, 10 - existingPhotos.length)
+    setNewFiles(prev => [...prev, ...files])
+    setNewPreviews(prev => [...prev, ...files.map(f => URL.createObjectURL(f))])
+  }
+
+  function removeExistingPhoto(index: number) {
+    setExistingPhotos(prev => prev.filter((_, i) => i !== index))
+    if (mainPhotoIndex === index) setMainPhotoIndex(0)
+  }
+
+  function removeNewPhoto(index: number) {
+    setNewFiles(prev => prev.filter((_, i) => i !== index))
+    setNewPreviews(prev => prev.filter((_, i) => i !== index))
+  }
+
+  // Total photos = existantes + nouvelles
+  const totalCount = existingPhotos.length + newFiles.length
+
   async function handleSave() {
     setError('')
     if (!data.title || !data.price_per_night) { setError('Titre et prix par nuit requis'); return }
     setSaving(true)
     const supabase = createClient() as any
+    const { data: { user } } = await supabase.auth.getUser()
+
+    let allPhotoUrls = [...existingPhotos]
+
+    // Upload les nouvelles photos
+    if (newFiles.length > 0 && user) {
+      setUploadingPhotos(true)
+      for (const file of newFiles) {
+        const ext = file.name.split('.').pop()
+        const path = `${user.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+        const { error: uploadError } = await supabase.storage.from('residences').upload(path, file)
+        if (!uploadError) {
+          const { data: urlData } = supabase.storage.from('residences').getPublicUrl(path)
+          allPhotoUrls.push(urlData.publicUrl)
+        }
+      }
+      setUploadingPhotos(false)
+    }
+
+    const mainPhoto = allPhotoUrls[mainPhotoIndex] ?? allPhotoUrls[0] ?? null
+
     const { error: err } = await supabase.from('residences').update({
       title: data.title, type: data.type, description: data.description,
       address: data.address, city: data.city, bedrooms: data.bedrooms,
       bathrooms: data.bathrooms, max_guests: data.max_guests,
       surface: data.surface ? Number(data.surface) : null,
       price_per_night: Number(data.price_per_night),
-      amenities: data.amenities, photos: data.photos,
+      amenities: data.amenities, photos: allPhotoUrls, main_photo: mainPhoto,
     }).eq('id', id)
 
     if (err) { setError('Erreur lors de la sauvegarde'); setSaving(false); return }
@@ -193,22 +240,66 @@ export default function ModifierResidencePage() {
 
         {/* Photos */}
         <div style={sectionStyle}>
-          <h2 style={{ fontSize: 13, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 20 }}>Photos (URLs)</h2>
-          {data.photos.map((p, i) => (
-            <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
-              <input style={{ ...inputStyle, flex: 1 }} value={p}
-                onChange={e => { const arr = [...data.photos]; arr[i] = e.target.value; set('photos', arr) }}
-                placeholder="https://..." />
-              <button onClick={() => set('photos', data.photos.filter((_, j) => j !== i))} style={{
-                padding: '0 14px', borderRadius: 10, border: '1px solid rgba(248,113,113,0.3)',
-                background: 'rgba(248,113,113,0.08)', color: '#f87171', cursor: 'pointer', fontSize: 16,
-              }}>×</button>
+          <h2 style={{ fontSize: 13, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>Photos</h2>
+          <p style={{ fontSize: 12, color: '#475569', marginBottom: 20 }}>Cliquez sur une photo pour la définir comme principale</p>
+
+          {/* Grille photos existantes */}
+          {existingPhotos.length > 0 && (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginBottom: 12 }}>
+              {existingPhotos.map((url, i) => (
+                <div key={i} onClick={() => setMainPhotoIndex(i)} style={{
+                  aspectRatio: '1', borderRadius: 12, overflow: 'hidden', cursor: 'pointer', position: 'relative',
+                  outline: i === mainPhotoIndex ? `2px solid ${accent}` : '2px solid transparent', outlineOffset: 2,
+                }}>
+                  <img src={url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  {i === mainPhotoIndex && (
+                    <div style={{ position: 'absolute', bottom: 6, left: 6, background: accent, color: '#0a1a14', fontSize: 9, fontWeight: 700, padding: '2px 6px', borderRadius: 6 }}>PRINCIPALE</div>
+                  )}
+                  <button onClick={e => { e.stopPropagation(); removeExistingPhoto(i) }} style={{
+                    position: 'absolute', top: 6, right: 6, width: 24, height: 24, borderRadius: '50%',
+                    background: 'rgba(239,68,68,0.9)', border: 'none', color: '#fff', cursor: 'pointer',
+                    fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}>✕</button>
+                </div>
+              ))}
             </div>
-          ))}
-          <button onClick={() => set('photos', [...data.photos, ''])} style={{
-            marginTop: 8, padding: '10px 18px', borderRadius: 10, border: '1px dashed rgba(34,211,165,0.3)',
-            background: 'rgba(34,211,165,0.05)', color: '#22d3a5', cursor: 'pointer', fontSize: 13,
-          }}>+ Ajouter une photo</button>
+          )}
+
+          {/* Nouvelles photos (preview) */}
+          {newPreviews.length > 0 && (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginBottom: 12 }}>
+              {newPreviews.map((url, i) => (
+                <div key={i} onClick={() => setMainPhotoIndex(existingPhotos.length + i)} style={{
+                  aspectRatio: '1', borderRadius: 12, overflow: 'hidden', cursor: 'pointer', position: 'relative',
+                  outline: (existingPhotos.length + i) === mainPhotoIndex ? `2px solid ${accent}` : '2px solid rgba(167,139,250,0.3)', outlineOffset: 2,
+                }}>
+                  <img src={url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  <div style={{ position: 'absolute', top: 6, left: 6, background: 'rgba(167,139,250,0.9)', borderRadius: 6, padding: '2px 6px', fontSize: 9, color: '#fff', fontWeight: 700 }}>NOUVEAU</div>
+                  <button onClick={e => { e.stopPropagation(); removeNewPhoto(i) }} style={{
+                    position: 'absolute', top: 6, right: 6, width: 24, height: 24, borderRadius: '50%',
+                    background: 'rgba(239,68,68,0.9)', border: 'none', color: '#fff', cursor: 'pointer',
+                    fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}>✕</button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Bouton ajouter */}
+          {totalCount < 10 && (
+            <label style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+              padding: '16px 20px', cursor: 'pointer',
+              background: 'rgba(34,211,165,0.04)', border: '1px dashed rgba(34,211,165,0.25)',
+              borderRadius: 12,
+            }}>
+              <span style={{ fontSize: 18, color: 'rgba(34,211,165,0.5)' }}>+</span>
+              <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.35)' }}>
+                Ajouter des photos ({totalCount}/10)
+              </span>
+              <input type="file" accept="image/*" multiple onChange={handleNewPhotos} style={{ display: 'none' }} />
+            </label>
+          )}
         </div>
 
         {error && <div style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 10, padding: '12px 16px', marginBottom: 20, color: '#f87171', fontSize: 13 }}>{error}</div>}
@@ -223,7 +314,7 @@ export default function ModifierResidencePage() {
             flex: 1, padding: '14px', borderRadius: 12, border: 'none',
             background: saving ? 'rgba(34,211,165,0.3)' : 'linear-gradient(135deg, #22d3a5, #0891b2)',
             color: saving ? '#64748b' : '#0a1428', fontWeight: 700, fontSize: 15, cursor: saving ? 'wait' : 'pointer',
-          }}>{saving ? 'Sauvegarde...' : 'Enregistrer les modifications'}</button>
+          }}>{saving ? (uploadingPhotos ? 'Upload photos...' : 'Sauvegarde...') : 'Enregistrer les modifications'}</button>
         </div>
       </div>
     </div>
