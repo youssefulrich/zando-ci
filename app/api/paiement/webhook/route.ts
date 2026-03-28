@@ -1,45 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { createHmac, timingSafeEqual, randomBytes } from 'crypto'
+import { createHmac, timingSafeEqual } from 'crypto'
 import { sendEventTicket, sendResidenceConfirmation, sendVehicleConfirmation } from '@/lib/email'
-
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://zando-ci.vercel.app'
-
-function generateTicketCode(): string {
-  return 'ZANDO-EVT-' + randomBytes(8).toString('hex').toUpperCase()
-}
-
-// ─── Génération des tickets numériques ───────────────────────────────────────
-async function generateTickets(
-  admin: any,
-  booking: Record<string, unknown>
-): Promise<{ code: string; ticket_number: number; total_in_booking: number }[]> {
-  const ticketsCount = booking.tickets_count as number
-  if (!ticketsCount || ticketsCount < 1) return []
-
-  const ticketsToInsert = Array.from({ length: ticketsCount }, (_, i) => ({
-    booking_id: booking.id,
-    event_id: booking.item_id,
-    user_id: booking.user_id,
-    code: generateTicketCode(),
-    ticket_number: i + 1,
-    total_in_booking: ticketsCount,
-    status: 'valid',
-  }))
-
-  const { data: createdTickets, error } = await admin
-    .from('tickets')
-    .insert(ticketsToInsert)
-    .select()
-
-  if (error) {
-    console.error('[Tickets] Erreur génération:', error)
-    return []
-  }
-
-  console.log(`[Tickets] ✅ ${ticketsCount} ticket(s) généré(s) pour la réservation ${booking.reference}`)
-  return createdTickets ?? []
-}
 
 // ─── Envoi emails selon type de réservation ───────────────────────────────────
 async function sendConfirmationEmail(
@@ -57,42 +19,24 @@ async function sendConfirmationEmail(
     if (booking.item_type === 'event') {
       const { data: evt } = await (admin as any)
         .from('events')
-        .select('title, event_date, event_time, venue_name, venue_address, city, price_per_ticket')
+        .select('title, date, time, location, ticket_price')
         .eq('id', booking.item_id)
         .single()
 
       if (evt) {
-        // Récupérer les tickets générés pour cet email
-        const { data: tickets } = await (admin as any)
-          .from('tickets')
-          .select('code, ticket_number, total_in_booking')
-          .eq('booking_id', booking.id)
-          .order('ticket_number')
-
-        // Construire les URLs QR pour chaque ticket
-        const ticketLinks = (tickets ?? []).map((t: any) => ({
-          code: t.code,
-          ticket_number: t.ticket_number,
-          total_in_booking: t.total_in_booking,
-          verify_url: `${APP_URL}/verify/${t.code}`,
-          qr_url: `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(`${APP_URL}/verify/${t.code}`)}&bgcolor=0a0f1a&color=22d3a5&margin=10`,
-        }))
-
         await sendEventTicket({
           to: customerEmail,
           customerName,
           eventName: evt.title,
-          eventDate: fmt(evt.event_date ?? evt.date),
-          eventTime: evt.event_time ?? evt.time ?? '00:00',
-          eventLocation: evt.venue_name ?? evt.location,
+          eventDate: fmt(evt.date),
+          eventTime: evt.time ?? '00:00',
+          eventLocation: evt.location,
           ticketsCount: (booking.tickets_count as number) ?? 1,
           totalPrice: booking.total_price as number,
           reference: booking.reference as string,
-          unitPrice: evt.price_per_ticket ?? evt.ticket_price,
-          // Nouveaux champs pour les QR codes (à utiliser dans votre template email)
-          ticketLinks,
+          unitPrice: evt.ticket_price,
         })
-        console.log(`[Email] 🎟️ Ticket(s) envoyé(s) → ${customerEmail}`)
+        console.log(`[Email] 🎟️ Ticket envoyé → ${customerEmail}`)
       }
 
     } else if (booking.item_type === 'residence') {
@@ -150,6 +94,7 @@ async function sendConfirmationEmail(
       }
     }
   } catch (emailErr) {
+    // L'email ne doit jamais bloquer la confirmation du paiement
     console.error('[Email] Erreur envoi:', emailErr)
   }
 }
@@ -166,9 +111,11 @@ export async function POST(req: NextRequest) {
 
     const webhookSecret = process.env.GENIUS_PAY_WEBHOOK_SECRET ?? ''
 
+    // Vérification signature HMAC-SHA256(timestamp + "." + payload, secret)
     if (webhookSecret && signature && timestamp) {
       const data = `${timestamp}.${body}`
       const expected = createHmac('sha256', webhookSecret).update(data).digest('hex')
+
       try {
         const sigBuffer = Buffer.from(signature, 'hex')
         const expBuffer = Buffer.from(expected, 'hex')
@@ -180,6 +127,8 @@ export async function POST(req: NextRequest) {
         console.error('Webhook: erreur vérification signature')
         return NextResponse.json({ error: 'Signature invalide' }, { status: 401 })
       }
+
+      // Protection replay attack
       const tsAge = Math.abs(Date.now() / 1000 - parseInt(timestamp))
       if (tsAge > 300) {
         console.error('Webhook: timestamp trop ancien', tsAge)
@@ -189,9 +138,12 @@ export async function POST(req: NextRequest) {
 
     const payload = JSON.parse(body)
     const event = eventType || payload.event || ''
+
     const txData = payload.data?.object === 'transaction' ? payload.data : payload.data
     const geniusPayId = String(txData?.id ?? payload.data?.id ?? '')
-    const bookingReference = txData?.metadata?.booking_reference ?? payload.data?.metadata?.booking_reference ?? ''
+    const bookingReference = txData?.metadata?.booking_reference
+                          ?? payload.data?.metadata?.booking_reference
+                          ?? ''
 
     console.log('Webhook reçu:', event, deliveryId, { geniusPayId, bookingReference })
 
@@ -200,27 +152,57 @@ export async function POST(req: NextRequest) {
     // Idempotence
     if (geniusPayId) {
       const { data: existing } = await admin
-        .from('payment_webhooks').select('id, processed').eq('genius_pay_id', geniusPayId).maybeSingle()
+        .from('payment_webhooks')
+        .select('id, processed')
+        .eq('genius_pay_id', geniusPayId)
+        .maybeSingle()
+
       if (existing?.processed) {
         console.log('Webhook déjà traité:', geniusPayId)
         return NextResponse.json({ ok: true, message: 'Déjà traité' })
       }
+
       if (!existing) {
-        await admin.from('payment_webhooks').insert({ event_type: event, genius_pay_id: geniusPayId, payload, processed: false })
+        await admin.from('payment_webhooks').insert({
+          event_type: event,
+          genius_pay_id: geniusPayId,
+          payload,
+          processed: false,
+        })
       }
     }
 
-    // Trouver le paiement
+    // Trouver le paiement via genius_pay_id
     let payment: any = null
+
     if (geniusPayId) {
-      const { data } = await admin.from('payments').select('*, bookings(*)').eq('genius_pay_id', geniusPayId).maybeSingle()
+      const { data } = await admin
+        .from('payments')
+        .select('*, bookings(*)')
+        .eq('genius_pay_id', geniusPayId)
+        .maybeSingle()
       payment = data
     }
+
+    // Fallback via référence dans les metadata
     if (!payment && bookingReference) {
-      const { data: bookingByRef } = await admin.from('bookings').select('*, payments(*)').eq('reference', bookingReference).maybeSingle()
+      const { data: bookingByRef } = await admin
+        .from('bookings')
+        .select('*, payments(*)')
+        .eq('reference', bookingReference)
+        .maybeSingle()
+
       if (bookingByRef) {
-        if (geniusPayId) await admin.from('payments').update({ genius_pay_id: geniusPayId }).eq('booking_id', bookingByRef.id)
-        const { data: p } = await admin.from('payments').select('*, bookings(*)').eq('booking_id', bookingByRef.id).maybeSingle()
+        if (geniusPayId) {
+          await admin.from('payments')
+            .update({ genius_pay_id: geniusPayId })
+            .eq('booking_id', bookingByRef.id)
+        }
+        const { data: p } = await admin
+          .from('payments')
+          .select('*, bookings(*)')
+          .eq('booking_id', bookingByRef.id)
+          .maybeSingle()
         payment = p
       }
     }
@@ -236,50 +218,84 @@ export async function POST(req: NextRequest) {
     if (event === 'payment.success' || txData?.status === 'completed') {
 
       await Promise.all([
-        admin.from('payments').update({ status: 'completed', completed_at: new Date().toISOString() }).eq('id', payment.id),
-        admin.from('bookings').update({ status: 'confirmed' }).eq('id', booking.id),
+        admin.from('payments').update({
+          status: 'completed',
+          completed_at: new Date().toISOString(),
+        }).eq('id', payment.id),
+
+        admin.from('bookings').update({
+          status: 'confirmed',
+        }).eq('id', booking.id),
       ])
 
-      // ✅ NOUVEAU : Générer les tickets si c'est un événement
+      // Décrémenter les billets pour les événements
       if (booking.item_type === 'event' && booking.tickets_count) {
-        // Décrémenter les billets disponibles
-        const { data: evt } = await admin.from('events').select('tickets_sold').eq('id', booking.item_id).single()
+        const { data: evt } = await admin
+          .from('events')
+          .select('tickets_sold')
+          .eq('id', booking.item_id)
+          .single()
+
         if (evt) {
           await admin.from('events').update({
             tickets_sold: evt.tickets_sold + (booking.tickets_count as number),
           }).eq('id', booking.item_id)
         }
-
-        // Générer les tickets en DB (AVANT l'envoi de l'email pour les inclure)
-        await generateTickets(admin, booking)
       }
 
-      // Récupérer email + nom du client et envoyer l'email
+      // Récupérer email + nom du client
       const { data: customerProfile } = await admin
-        .from('profiles').select('full_name, email').eq('id', booking.user_id).single()
+        .from('profiles')
+        .select('full_name, email')
+        .eq('id', booking.user_id)
+        .single()
 
       if (customerProfile?.email) {
-        await sendConfirmationEmail(admin, booking, customerProfile.full_name ?? 'Client', customerProfile.email)
+        await sendConfirmationEmail(
+          admin,
+          booking,
+          customerProfile.full_name ?? 'Client',
+          customerProfile.email
+        )
       }
 
-      if (geniusPayId) await admin.from('payment_webhooks').update({ processed: true }).eq('genius_pay_id', geniusPayId)
+      if (geniusPayId) {
+        await admin.from('payment_webhooks')
+          .update({ processed: true })
+          .eq('genius_pay_id', geniusPayId)
+      }
+
       console.log('✅ Paiement confirmé:', booking.reference)
 
-    // ── Paiement échoué / annulé ───────────────────────────────────────────────
+    // ── Paiement échoué / annulé / expiré ─────────────────────────────────────
     } else if (
-      event === 'payment.failed' || event === 'payment.cancelled' || event === 'payment.expired' ||
-      txData?.status === 'failed' || txData?.status === 'cancelled'
+      event === 'payment.failed' ||
+      event === 'payment.cancelled' ||
+      event === 'payment.expired' ||
+      txData?.status === 'failed' ||
+      txData?.status === 'cancelled'
     ) {
+
       await Promise.all([
         admin.from('payments').update({ status: 'failed' }).eq('id', payment.id),
         admin.from('bookings').update({ status: 'cancelled' }).eq('id', booking.id),
       ])
-      if (geniusPayId) await admin.from('payment_webhooks').update({ processed: true }).eq('genius_pay_id', geniusPayId)
+
+      if (geniusPayId) {
+        await admin.from('payment_webhooks')
+          .update({ processed: true })
+          .eq('genius_pay_id', geniusPayId)
+      }
+
       console.log('❌ Paiement échoué/annulé:', booking.reference, event)
 
     } else {
       console.log('ℹ️ Événement ignoré:', event)
-      if (geniusPayId) await admin.from('payment_webhooks').update({ processed: true }).eq('genius_pay_id', geniusPayId)
+      if (geniusPayId) {
+        await admin.from('payment_webhooks')
+          .update({ processed: true })
+          .eq('genius_pay_id', geniusPayId)
+      }
     }
 
     return NextResponse.json({ ok: true })
