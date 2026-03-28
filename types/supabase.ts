@@ -57,6 +57,7 @@ export type Database = {
       }
       bookings: {
         Row: {
+          client_email: string | null
           client_name: string
           client_note: string | null
           client_phone: string
@@ -77,6 +78,7 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          client_email?: string | null
           client_name: string
           client_note?: string | null
           client_phone: string
@@ -97,6 +99,7 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          client_email?: string | null
           client_name?: string
           client_note?: string | null
           client_phone?: string
@@ -418,6 +421,77 @@ export type Database = {
           {
             foreignKeyName: "residences_owner_id_fkey"
             columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tickets: {
+        Row: {
+          booking_id: string | null
+          code: string
+          created_at: string | null
+          event_id: string | null
+          id: string
+          scanned_at: string | null
+          scanned_by: string | null
+          status: string | null
+          ticket_number: number
+          total_in_booking: number
+          user_id: string | null
+        }
+        Insert: {
+          booking_id?: string | null
+          code: string
+          created_at?: string | null
+          event_id?: string | null
+          id?: string
+          scanned_at?: string | null
+          scanned_by?: string | null
+          status?: string | null
+          ticket_number: number
+          total_in_booking: number
+          user_id?: string | null
+        }
+        Update: {
+          booking_id?: string | null
+          code?: string
+          created_at?: string | null
+          event_id?: string | null
+          id?: string
+          scanned_at?: string | null
+          scanned_by?: string | null
+          status?: string | null
+          ticket_number?: number
+          total_in_booking?: number
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tickets_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tickets_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "owner_earnings"
+            referencedColumns: ["booking_id"]
+          },
+          {
+            foreignKeyName: "tickets_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tickets_user_id_fkey"
+            columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
