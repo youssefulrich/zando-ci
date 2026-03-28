@@ -69,13 +69,12 @@ async function sendConfirmationEmail(
           .eq('booking_id', booking.id)
           .order('ticket_number')
 
-        // Construire les URLs QR pour chaque ticket
+        // Construire les URLs de vérification pour chaque ticket
         const ticketLinks = (tickets ?? []).map((t: any) => ({
           code: t.code,
           ticket_number: t.ticket_number,
           total_in_booking: t.total_in_booking,
           verify_url: `${APP_URL}/verify/${t.code}`,
-          qr_url: `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(`${APP_URL}/verify/${t.code}`)}&bgcolor=0a0f1a&color=22d3a5&margin=10`,
         }))
 
         await sendEventTicket({
@@ -89,7 +88,6 @@ async function sendConfirmationEmail(
           totalPrice: booking.total_price as number,
           reference: booking.reference as string,
           unitPrice: evt.price_per_ticket ?? evt.ticket_price,
-          // Nouveaux champs pour les QR codes (à utiliser dans votre template email)
           ticketLinks,
         })
         console.log(`[Email] 🎟️ Ticket(s) envoyé(s) → ${customerEmail}`)
