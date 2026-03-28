@@ -227,7 +227,7 @@ export async function sendEventTicket(params: {
 `
 
   return await resend.emails.send({
-    from: 'Zando CI <tickets@zando.ci>',
+    from: 'Zando CI <onboarding@resend.dev>',
     to: params.to,
     subject: `🎟️ Votre billet — ${params.eventName}`,
     html,
@@ -337,7 +337,7 @@ export async function sendResidenceConfirmation(params: {
 `
 
   return await resend.emails.send({
-    from: 'Zando CI <reservations@zando.ci>',
+    from: 'Zando CI <onboarding@resend.dev>',
     to: params.to,
     subject: `✅ Réservation confirmée — ${params.residenceName}`,
     html,
@@ -447,7 +447,7 @@ export async function sendVehicleConfirmation(params: {
 `
 
   return await resend.emails.send({
-    from: 'Zando CI <reservations@zando.ci>',
+   from: 'Zando CI <onboarding@resend.dev>',
     to: params.to,
     subject: `✅ Location confirmée — ${params.vehicleName}`,
     html,
