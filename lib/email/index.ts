@@ -24,6 +24,7 @@ export async function sendEventTicket(params: {
   totalPrice: number
   reference: string
   unitPrice: number
+  ticketLinks:string[]
 }) {
   const qrDataUrl = await generateQRCode(
     JSON.stringify({ ref: params.reference, type: 'event_ticket' })
