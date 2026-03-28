@@ -62,14 +62,12 @@ async function sendConfirmationEmail(
         .single()
 
       if (evt) {
-        // Récupérer les tickets générés pour cet email
         const { data: tickets } = await (admin as any)
           .from('tickets')
           .select('code, ticket_number, total_in_booking')
           .eq('booking_id', booking.id)
           .order('ticket_number')
 
-        // Construire les URLs de vérification pour chaque ticket
         const ticketLinks = (tickets ?? []).map((t: any) => ({
           code: t.code,
           ticket_number: t.ticket_number,
@@ -238,26 +236,31 @@ export async function POST(req: NextRequest) {
         admin.from('bookings').update({ status: 'confirmed' }).eq('id', booking.id),
       ])
 
-      // ✅ NOUVEAU : Générer les tickets si c'est un événement
+      // Générer les tickets si c'est un événement
       if (booking.item_type === 'event' && booking.tickets_count) {
-        // Décrémenter les billets disponibles
         const { data: evt } = await admin.from('events').select('tickets_sold').eq('id', booking.item_id).single()
         if (evt) {
           await admin.from('events').update({
             tickets_sold: evt.tickets_sold + (booking.tickets_count as number),
           }).eq('id', booking.item_id)
         }
-
-        // Générer les tickets en DB (AVANT l'envoi de l'email pour les inclure)
         await generateTickets(admin, booking)
       }
 
-      // Récupérer email + nom du client et envoyer l'email
+      // ✅ Récupérer email depuis auth.users (fiable) + nom depuis profiles
+      const { data: authUser } = await admin.auth.admin.getUserById(booking.user_id as string)
       const { data: customerProfile } = await admin
-        .from('profiles').select('full_name, email').eq('id', booking.user_id).single()
+        .from('profiles').select('full_name').eq('id', booking.user_id).single()
 
-      if (customerProfile?.email) {
-        await sendConfirmationEmail(admin, booking, customerProfile.full_name ?? 'Client', customerProfile.email)
+      const customerEmail = authUser?.user?.email ?? ''
+      const customerName = customerProfile?.full_name ?? 'Client'
+
+      console.log('[Email] Client:', customerName, '→', customerEmail || 'PAS D\'EMAIL')
+
+      if (customerEmail) {
+        await sendConfirmationEmail(admin, booking, customerName, customerEmail)
+      } else {
+        console.warn('[Email] Pas d\'email trouvé pour user_id:', booking.user_id)
       }
 
       if (geniusPayId) await admin.from('payment_webhooks').update({ processed: true }).eq('genius_pay_id', geniusPayId)
