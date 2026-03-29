@@ -64,7 +64,7 @@ export default function BookingFormResidence({
     setLoading(true)
 
     try {
-      const res = await fetch('/api/paiement/initier', {
+      const res = await fetch('/api/reservation/demande', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -85,18 +85,17 @@ export default function BookingFormResidence({
         return
       }
 
-      if (data.payment_url) {
-        window.location.href = data.payment_url
-        return
-      }
-
-      if (data.reference) {
-        router.push('/paiement/succes?ref=' + data.reference)
-        return
-      }
-
-      setError('Réponse inattendue du serveur')
-      setLoading(false)
+      // Redirection vers page confirmation avec infos proprio
+      const params = new URLSearchParams({
+        ref: data.reference,
+        type: 'residence',
+        owner_phone: data.owner_phone ?? '',
+        owner_name: data.owner_name ?? '',
+        item_name: data.item_name ?? '',
+        start_date: checkIn,
+        end_date: checkOut,
+      })
+      router.push(`/reservation/confirmation?${params}`)
 
     } catch {
       setError('Erreur réseau, veuillez réessayer')
@@ -186,12 +185,8 @@ export default function BookingFormResidence({
               <span style={{ color: '#94a3b8', fontSize: 13 }}>{formatPrice(safePrice)} × {getPriceLabel()}</span>
               <span style={{ color: '#e2e8f0', fontSize: 13 }}>{formatPrice(totalPrice)}</span>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-              <span style={{ color: '#94a3b8', fontSize: 13 }}>Frais de service (10%)</span>
-              <span style={{ color: '#94a3b8', fontSize: 13 }}>inclus</span>
-            </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 10, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-              <span style={{ color: '#e2e8f0', fontWeight: 600 }}>Total</span>
+              <span style={{ color: '#e2e8f0', fontWeight: 600 }}>Total estimé</span>
               <span style={{ color: '#22d3a5', fontWeight: 700, fontSize: 16 }}>{formatPrice(totalPrice)}</span>
             </div>
           </div>
@@ -205,22 +200,22 @@ export default function BookingFormResidence({
 
         <button
           onClick={handleSubmit}
-          disabled={loading || !checkIn || !checkOut || nights <= 0 || safePrice <= 0}
+          disabled={loading || !checkIn || !checkOut || nights <= 0}
           style={{
             width: '100%', padding: '15px',
-            background: (loading || !checkIn || !checkOut || nights <= 0 || safePrice <= 0)
+            background: (loading || !checkIn || !checkOut || nights <= 0)
               ? 'rgba(34,211,165,0.3)' : 'linear-gradient(135deg, #22d3a5, #0891b2)',
             border: 'none', borderRadius: 12,
-            color: (loading || !checkIn || !checkOut || nights <= 0 || safePrice <= 0) ? '#64748b' : '#0a0f1a',
+            color: (loading || !checkIn || !checkOut || nights <= 0) ? '#64748b' : '#0a0f1a',
             fontWeight: 700, fontSize: 15, cursor: loading ? 'wait' : 'pointer',
             minHeight: 52, transition: 'all 0.2s',
           }}
         >
-          {loading ? 'Redirection vers le paiement...' : nights > 0 ? `Réserver — ${formatPrice(totalPrice)}` : 'Choisir les dates'}
+          {loading ? 'Envoi de la demande...' : nights > 0 ? `Envoyer la demande — ${formatPrice(totalPrice)}` : 'Choisir les dates'}
         </button>
 
         <p style={{ textAlign: 'center', color: '#475569', fontSize: 12, marginTop: 12 }}>
-          🔒 Paiement sécurisé via Genius Pay
+          📞 Le propriétaire vous contactera pour finaliser
         </p>
       </div>
     </>

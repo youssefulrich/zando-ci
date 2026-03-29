@@ -16,6 +16,7 @@ export default function BookingFormVehicle({ vehicle, bookedDates, isLoggedIn }:
   const router = useRouter()
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
+  const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
   const today = new Date().toISOString().split('T')[0]
@@ -28,13 +29,52 @@ export default function BookingFormVehicle({ vehicle, bookedDates, isLoggedIn }:
   const days = startDate && endDate ? getNights(new Date(startDate), new Date(endDate)) : 0
   const total = days * vehicle.price_per_day
 
-  function handleBook() {
+  async function handleBook() {
     if (!isLoggedIn) { router.push('/login'); return }
     if (!startDate || !endDate) { setError('Choisissez vos dates'); return }
     if (days < 1) { setError('Minimum 1 jour de location'); return }
     if (isDateBooked(startDate) || isDateBooked(endDate)) { setError('Ces dates ne sont pas disponibles'); return }
-    const p = new URLSearchParams({ item_type: 'vehicle', item_id: vehicle.id, start_date: startDate, end_date: endDate, total: String(total) })
-    router.push(`/checkout?${p}`)
+
+    setLoading(true)
+    setError('')
+
+    try {
+      const res = await fetch('/api/reservation/demande', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          itemType: 'vehicle',
+          itemId: vehicle.id,
+          startDate,
+          endDate,
+          total,
+        }),
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        setError(data.error ?? 'Erreur lors de la réservation')
+        setLoading(false)
+        return
+      }
+
+      // Redirection vers page confirmation avec infos proprio
+      const params = new URLSearchParams({
+        ref: data.reference,
+        type: 'vehicle',
+        owner_phone: data.owner_phone ?? '',
+        owner_name: data.owner_name ?? '',
+        item_name: data.item_name ?? '',
+        start_date: startDate,
+        end_date: endDate,
+      })
+      router.push(`/reservation/confirmation?${params}`)
+
+    } catch {
+      setError('Erreur réseau, veuillez réessayer')
+      setLoading(false)
+    }
   }
 
   const inp = {
@@ -54,9 +94,7 @@ export default function BookingFormVehicle({ vehicle, bookedDates, isLoggedIn }:
     <>
       <style>{`
         .bfv-dates { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        @media (max-width: 400px) {
-          .bfv-dates { grid-template-columns: 1fr; }
-        }
+        @media (max-width: 400px) { .bfv-dates { grid-template-columns: 1fr; } }
       `}</style>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginTop: 20 }}>
@@ -85,7 +123,7 @@ export default function BookingFormVehicle({ vehicle, bookedDates, isLoggedIn }:
               <span style={{ fontSize: 13, color: '#fff', fontWeight: 600 }}>{formatPrice(total)}</span>
             </div>
             <div style={{ borderTop: '0.5px solid rgba(255,255,255,0.06)', paddingTop: 10, display: 'flex', justifyContent: 'space-between' }}>
-              <span style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>Total</span>
+              <span style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>Total estimé</span>
               <span style={{ fontSize: 16, fontWeight: 800, color: accent }}>{formatPrice(total)}</span>
             </div>
           </div>
@@ -93,16 +131,20 @@ export default function BookingFormVehicle({ vehicle, bookedDates, isLoggedIn }:
 
         {error && <p style={{ fontSize: 12, color: '#f87171', margin: 0 }}>{error}</p>}
 
-        <button onClick={handleBook} style={{
+        <button onClick={handleBook} disabled={loading} style={{
           width: '100%', padding: '15px',
-          background: isLoggedIn ? accent : 'rgba(255,255,255,0.08)',
+          background: loading ? 'rgba(96,165,250,0.3)' : isLoggedIn ? accent : 'rgba(255,255,255,0.08)',
           color: isLoggedIn ? '#0a1428' : 'rgba(255,255,255,0.4)',
           borderRadius: 12, border: isLoggedIn ? 'none' : '0.5px solid rgba(255,255,255,0.1)',
-          fontSize: 15, fontWeight: 700, cursor: 'pointer',
+          fontSize: 15, fontWeight: 700, cursor: loading ? 'wait' : 'pointer',
           minHeight: 52,
         }}>
-          {isLoggedIn ? 'Réserver' : 'Connectez-vous pour réserver'}
+          {loading ? 'Envoi de la demande...' : isLoggedIn ? 'Envoyer la demande' : 'Connectez-vous pour réserver'}
         </button>
+
+        <p style={{ textAlign: 'center', color: 'rgba(255,255,255,0.2)', fontSize: 12, margin: 0 }}>
+          📞 Le loueur vous contactera pour finaliser
+        </p>
       </div>
     </>
   )
