@@ -9,27 +9,23 @@ import { createClient } from '@/lib/supabase/client'
 
 type Profile = { full_name: string; city: string; account_type: string }
 
-export default function DashboardResidence({ profile, userId, showAll = false }: { profile: Profile; userId: string; showAll?: boolean }) {
+export default function DashboardResidence({ profile, userId }: { profile: Profile; userId: string }) {
   const [residences, setResidences] = useState<any[]>([])
   const [bookings, setBookings] = useState<any[]>([])
   const [stats, setStats] = useState({ confirmed: 0, revenus_nets: 0, commission: 0 })
   const [actionLoading, setActionLoading] = useState<string | null>(null)
 
-  useEffect(() => {
-    loadData()
-  }, [userId])
+  useEffect(() => { loadData() }, [userId])
 
   async function loadData() {
     const supabase = createClient()
     supabase.from('residences').select('*').eq('owner_id', userId).order('created_at', { ascending: false })
-      .then(({ data }) => setResidences((data ?? []) as any[]))
-
+      .then(({ data }) => setResidences(data ?? []))
     supabase.from('bookings').select('*').eq('item_type', 'residence').order('created_at', { ascending: false })
-      .then(async ({ data: allRaw }) => {
-        const all = (allRaw ?? []) as any[]
-        if (!all.length) return
-        const { data: myResRaw } = await supabase.from('residences').select('id').eq('owner_id', userId)
-        const ids = ((myResRaw ?? []) as any[]).map((r: any) => r.id)
+      .then(async ({ data: all }) => {
+        if (!all) return
+        const { data: myRes } = await supabase.from('residences').select('id').eq('owner_id', userId)
+        const ids = (myRes ?? []).map((r: any) => r.id)
         const mine = all.filter((b: any) => ids.includes(b.item_id))
         setBookings(mine)
         const confirmed = mine.filter((b: any) => b.status === 'confirmed')
@@ -41,256 +37,209 @@ export default function DashboardResidence({ profile, userId, showAll = false }:
 
   async function toggleAvailability(id: string, current: boolean) {
     const supabase = createClient()
-    await (supabase.from('residences') as any).update({ is_available: !current }).eq('id', id)
+    await supabase.from('residences').update({ is_available: !current } as any).eq('id', id)
     setResidences(prev => prev.map(r => r.id === id ? { ...r, is_available: !current } : r))
   }
 
   async function deleteResidence(id: string) {
     if (!confirm('Désactiver cette résidence ?')) return
     const supabase = createClient()
-    await (supabase.from('residences') as any).update({ status: 'inactive' }).eq('id', id)
+    await supabase.from('residences').update({ status: 'inactive' } as any).eq('id', id)
     setResidences(prev => prev.filter(r => r.id !== id))
   }
 
-  // ✅ Confirmer une réservation pending_contact
-  async function confirmBooking(bookingId: string) {
+  async function confirmBooking(id: string) {
     if (!confirm('Confirmer cette réservation ?')) return
-    setActionLoading(bookingId + '_confirm')
+    setActionLoading(id + '_c')
     const supabase = createClient()
-    await supabase.from('bookings').update({ status: 'confirmed' }).eq('id', bookingId)
-    setBookings(prev => prev.map(b => b.id === bookingId ? { ...b, status: 'confirmed' } : b))
+    await supabase.from('bookings').update({ status: 'confirmed' }).eq('id', id)
+    setBookings(prev => prev.map(b => b.id === id ? { ...b, status: 'confirmed' } : b))
     setActionLoading(null)
   }
 
-  // ✅ Refuser une réservation pending_contact
-  async function rejectBooking(bookingId: string) {
+  async function rejectBooking(id: string) {
     if (!confirm('Refuser cette réservation ?')) return
-    setActionLoading(bookingId + '_reject')
+    setActionLoading(id + '_r')
     const supabase = createClient()
-    await supabase.from('bookings').update({ status: 'cancelled' }).eq('id', bookingId)
-    setBookings(prev => prev.map(b => b.id === bookingId ? { ...b, status: 'cancelled' } : b))
+    await supabase.from('bookings').update({ status: 'cancelled' }).eq('id', id)
+    setBookings(prev => prev.map(b => b.id === id ? { ...b, status: 'cancelled' } : b))
     setActionLoading(null)
   }
 
-  function getStatusLabel(status: string) {
-    switch (status) {
-      case 'confirmed': return 'Confirmée'
-      case 'pending_contact': return 'En attente'
-      case 'pending': return 'En attente'
-      case 'cancelled': return 'Annulée'
-      default: return status
-    }
-  }
-
-  function getStatusColors(status: string) {
-    switch (status) {
-      case 'confirmed': return { bg: 'rgba(34,211,165,0.1)', color: '#22d3a5', border: 'rgba(34,211,165,0.2)' }
-      case 'pending_contact':
-      case 'pending': return { bg: 'rgba(251,191,36,0.1)', color: '#fbbf24', border: 'rgba(251,191,36,0.2)' }
-      default: return { bg: 'rgba(248,113,113,0.1)', color: '#f87171', border: 'rgba(248,113,113,0.2)' }
-    }
-  }
-
+  const pendingBookings = bookings.filter(b => b.status === 'pending_contact')
   const accent = '#22d3a5'
-  const card = { background: '#111827', border: '0.5px solid rgba(255,255,255,0.08)', borderRadius: 16 }
 
   return (
     <>
       <style>{`
-        .dr-wrap { max-width: 1200px; margin: 0 auto; padding: 40px 48px; }
-        .dr-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 40px; }
-        .dr-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 32px; }
-        .dr-revbar { display: flex; align-items: center; gap: 32px; }
-        .dr-revlegend { display: flex; gap: 24px; flex-shrink: 0; }
-        .dr-two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        .dr-booking-row { padding: 14px 0; border-bottom: 0.5px solid rgba(255,255,255,0.05); }
-        .dr-booking-row:last-child { border-bottom: none; }
-        .dr-booking-top { display: flex; justify-content: space-between; align-items: flex-start; }
-
-        @media (max-width: 767px) {
-          .dr-wrap { padding: 24px 16px; }
-          .dr-header { flex-direction: column; gap: 16px; align-items: flex-start; }
-          .dr-header a { width: 100%; text-align: center; }
-          .dr-stats { grid-template-columns: 1fr 1fr; }
-          .dr-revbar { flex-direction: column; gap: 16px; align-items: flex-start; }
-          .dr-revlegend { gap: 16px; }
-          .dr-two-col { grid-template-columns: 1fr; }
-          .dr-item-actions { flex-direction: row !important; flex-wrap: wrap; gap: 6px !important; }
-          .dr-title { font-size: 26px !important; }
+        .dr { background: #0a0f1a; min-height: 100vh; }
+        .dr-wrap { max-width: 900px; margin: 0 auto; padding: 24px 16px 60px; }
+        .dr-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        .dr-head-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+        .dr-new-btn { padding: 9px 14px; background: #22d3a5; color: #0a1a14; border-radius: 10px; font-size: 12px; font-weight: 700; text-decoration: none; white-space: nowrap; }
+        .dr-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+        .dr-stat { background: #111827; border: 0.5px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 14px; }
+        .dr-card { background: #111827; border: 0.5px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 16px; margin-bottom: 14px; }
+        .dr-pending { border-color: rgba(251,191,36,0.25); background: rgba(251,191,36,0.04); }
+        .dr-pending-item { padding-bottom: 14px; margin-bottom: 14px; border-bottom: 0.5px solid rgba(255,255,255,0.06); }
+        .dr-pending-item:last-child { padding-bottom: 0; margin-bottom: 0; border-bottom: none; }
+        .dr-res { display: flex; gap: 10px; background: rgba(255,255,255,0.03); border: 0.5px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 12px; }
+        .dr-res + .dr-res { margin-top: 10px; }
+        .dr-res-thumb { width: 50px; height: 50px; border-radius: 10px; overflow: hidden; background: #1a2236; flex-shrink: 0; }
+        .dr-res-btns { display: flex; flex-direction: column; gap: 4px; flex-shrink: 0; }
+        .dr-rbtn { font-size: 11px; padding: 5px 9px; border-radius: 7px; cursor: pointer; text-align: center; text-decoration: none; display: block; white-space: nowrap; border: none; }
+        .dr-book-row { display: flex; justify-content: space-between; align-items: flex-start; padding: 11px 0; border-bottom: 0.5px solid rgba(255,255,255,0.05); }
+        .dr-book-row:last-child { border-bottom: none; }
+        @media (min-width: 640px) {
+          .dr-wrap { padding: 32px 24px 60px; }
+          .dr-stats { grid-template-columns: repeat(4, 1fr); }
         }
-
-        @media (min-width: 768px) and (max-width: 1023px) {
-          .dr-wrap { padding: 32px 24px; }
-          .dr-stats { grid-template-columns: repeat(2, 1fr); }
-          .dr-two-col { grid-template-columns: 1fr; }
+        @media (min-width: 900px) {
+          .dr-two { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+          .dr-two .dr-card { margin-bottom: 0; }
         }
       `}</style>
 
-      <div style={{ background: '#0a0f1a', minHeight: '100vh' }}>
+      <div className="dr">
         <Navbar />
         <div className="dr-wrap">
 
-          <div className="dr-header">
+          {/* Header */}
+          <div className="dr-head">
             <div>
-              <div style={{ fontSize: 11, color: accent, textTransform: 'uppercase', letterSpacing: 2, fontWeight: 600, marginBottom: 8 }}>Dashboard</div>
-              <h1 className="dr-title" style={{ fontSize: 32, fontWeight: 800, color: '#fff', letterSpacing: -1, marginBottom: 6 }}>Bonjour, {profile.full_name.split(' ')[0]}</h1>
-              <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.35)' }}>{profile.city} · Propriétaire résidences</p>
+              <div style={{ fontSize: 10, color: accent, textTransform: 'uppercase', letterSpacing: 2, fontWeight: 600, marginBottom: 4 }}>Dashboard</div>
+              <h1 style={{ fontSize: 22, fontWeight: 800, color: '#fff', letterSpacing: -0.5, marginBottom: 2 }}>
+                Bonjour, {profile.full_name.split(' ')[0]} 👋
+              </h1>
+              <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)' }}>{profile.city} · Propriétaire</p>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div className="dr-head-right">
               <NotificationBell />
-              <Link href="/publier/residence" style={{ padding: '12px 22px', background: accent, color: '#0a1a14', borderRadius: 12, fontSize: 13, fontWeight: 700, textDecoration: 'none', whiteSpace: 'nowrap' }}>+ Nouvelle résidence</Link>
+              <Link href="/publier/residence" className="dr-new-btn">+ Ajouter</Link>
             </div>
           </div>
 
+          {/* Stats */}
           <div className="dr-stats">
             {[
               { label: 'Résidences', value: residences.length, color: accent },
               { label: 'Confirmées', value: stats.confirmed, color: '#fff' },
-              { label: 'Commission (10%)', value: `− ${formatPrice(stats.commission)}`, color: '#f87171' },
-              { label: 'Vous recevez', value: formatPrice(stats.revenus_nets), color: accent, highlight: true },
+              { label: 'Commission', value: `−${formatPrice(stats.commission)}`, color: '#f87171' },
+              { label: 'Vous recevez', value: formatPrice(stats.revenus_nets), color: accent, hl: true },
             ].map((s, i) => (
-              <div key={i} style={{ ...card, padding: 24, background: s.highlight ? 'rgba(34,211,165,0.06)' : '#111827', border: s.highlight ? '0.5px solid rgba(34,211,165,0.2)' : '0.5px solid rgba(255,255,255,0.08)' }}>
-                <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>{s.label}</p>
-                <p style={{ fontSize: i > 1 ? 18 : 28, fontWeight: 800, color: s.color, letterSpacing: -0.5 }}>{s.value}</p>
+              <div key={i} className="dr-stat" style={s.hl ? { background: 'rgba(34,211,165,0.06)', borderColor: 'rgba(34,211,165,0.2)' } : {}}>
+                <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 6 }}>{s.label}</p>
+                <p style={{ fontSize: i > 1 ? 14 : 20, fontWeight: 800, color: s.color }}>{s.value}</p>
               </div>
             ))}
           </div>
 
-          {stats.revenus_nets > 0 && (
-            <div style={{ ...card, padding: '20px 24px', marginBottom: 32 }}>
-              <div className="dr-revbar">
-                <div style={{ flex: 1 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                    <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>Répartition des revenus</span>
-                    <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>Total : {formatPrice(stats.revenus_nets + stats.commission)}</span>
-                  </div>
-                  <div style={{ height: 8, background: 'rgba(255,255,255,0.06)', borderRadius: 4, overflow: 'hidden' }}>
-                    <div style={{ height: '100%', borderRadius: 4, background: accent, width: `${Math.round((stats.revenus_nets / (stats.revenus_nets + stats.commission || 1)) * 100)}%` }} />
-                  </div>
-                </div>
-                <div className="dr-revlegend">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><div style={{ width: 10, height: 10, borderRadius: 2, background: accent }} /><span style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>Vous (90%)</span></div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><div style={{ width: 10, height: 10, borderRadius: 2, background: 'rgba(255,255,255,0.1)' }} /><span style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>Zando (10%)</span></div>
-                </div>
+          {/* Demandes en attente */}
+          {pendingBookings.length > 0 && (
+            <div className="dr-card dr-pending">
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+                <span>🔔</span>
+                <h2 style={{ fontSize: 14, fontWeight: 700, color: '#fbbf24' }}>
+                  {pendingBookings.length} demande{pendingBookings.length > 1 ? 's' : ''} en attente
+                </h2>
               </div>
+              {pendingBookings.map(b => (
+                <div key={b.id} className="dr-pending-item">
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <p style={{ fontSize: 11, fontFamily: 'monospace', color: 'rgba(255,255,255,0.25)', marginBottom: 2 }}>{b.reference}</p>
+                      <p style={{ fontSize: 13, fontWeight: 600, color: '#fff', marginBottom: 4 }}>{b.client_name}</p>
+                      {b.client_phone && (
+                        <a href={`tel:${b.client_phone}`} style={{ fontSize: 12, color: '#60a5fa', textDecoration: 'none', display: 'block', marginBottom: 2 }}>📞 {b.client_phone}</a>
+                      )}
+                      {b.start_date && <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>{b.start_date} → {b.end_date}</p>}
+                    </div>
+                    <p style={{ fontSize: 13, fontWeight: 700, color: '#fff', flexShrink: 0 }}>{formatPrice(b.total_price)}</p>
+                  </div>
+                  <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+                    <button onClick={() => confirmBooking(b.id)} disabled={actionLoading === b.id + '_c'}
+                      style={{ flex: 1, padding: '10px', background: '#22d3a5', color: '#0a1a14', borderRadius: 10, border: 'none', fontSize: 13, fontWeight: 700, cursor: 'pointer', opacity: actionLoading === b.id + '_c' ? 0.5 : 1 }}>
+                      {actionLoading === b.id + '_c' ? '...' : '✓ Confirmer'}
+                    </button>
+                    <button onClick={() => rejectBooking(b.id)} disabled={actionLoading === b.id + '_r'}
+                      style={{ flex: 1, padding: '10px', background: 'rgba(248,113,113,0.1)', color: '#f87171', borderRadius: 10, border: '0.5px solid rgba(248,113,113,0.2)', fontSize: 13, cursor: 'pointer', opacity: actionLoading === b.id + '_r' ? 0.5 : 1 }}>
+                      {actionLoading === b.id + '_r' ? '...' : '✕ Refuser'}
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
 
-          <div className="dr-two-col">
+          <div className="dr-two">
             {/* Mes résidences */}
-            <div style={{ ...card, padding: 24 }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-                <h2 style={{ fontSize: 15, fontWeight: 700, color: '#fff' }}>Mes résidences</h2>
-                <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', background: 'rgba(255,255,255,0.05)', padding: '3px 10px', borderRadius: 20 }}>{residences.length}</span>
+            <div className="dr-card">
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+                <h2 style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>Mes résidences</h2>
+                <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', background: 'rgba(255,255,255,0.05)', padding: '2px 8px', borderRadius: 20 }}>{residences.length}</span>
               </div>
               {residences.length > 0 ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <div>
                   {residences.map(r => (
-                    <div key={r.id} style={{ display: 'flex', gap: 12, background: 'rgba(255,255,255,0.03)', border: '0.5px solid rgba(255,255,255,0.06)', borderRadius: 12, padding: 12 }}>
-                      <div style={{ width: 48, height: 48, borderRadius: 10, overflow: 'hidden', background: '#1a2236', flexShrink: 0 }}>
-                        {(r.main_photo || (Array.isArray(r.photos) && r.photos[0])) ? <img src={r.main_photo || r.photos[0]} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, color: 'rgba(255,255,255,0.15)' }}>⌂</div>}
+                    <div key={r.id} className="dr-res">
+                      <div className="dr-res-thumb">
+                        {(r.main_photo || r.photos?.[0])
+                          ? <img src={r.main_photo || r.photos[0]} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, color: 'rgba(255,255,255,0.15)' }}>⌂</div>
+                        }
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <p style={{ fontSize: 13, fontWeight: 600, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginBottom: 3 }}>{r.title}</p>
-                        <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginBottom: 6 }}>{r.city} · {formatPrice(r.price_per_night)}/nuit</p>
-                        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                          <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 8px', borderRadius: 20, background: r.status === 'active' ? 'rgba(34,211,165,0.1)' : 'rgba(251,191,36,0.1)', color: r.status === 'active' ? '#22d3a5' : '#fbbf24', border: `0.5px solid ${r.status === 'active' ? 'rgba(34,211,165,0.2)' : 'rgba(251,191,36,0.2)'}` }}>{r.status === 'active' ? 'Active' : 'En attente'}</span>
-                          {r.status === 'active' && <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 8px', borderRadius: 20, background: r.is_available ? 'rgba(96,165,250,0.1)' : 'rgba(248,113,113,0.1)', color: r.is_available ? '#60a5fa' : '#f87171', border: `0.5px solid ${r.is_available ? 'rgba(96,165,250,0.2)' : 'rgba(248,113,113,0.2)'}` }}>{r.is_available ? 'Disponible' : 'Indisponible'}</span>}
+                        <p style={{ fontSize: 13, fontWeight: 600, color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginBottom: 2 }}>{r.title}</p>
+                        <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginBottom: 6 }}>{formatPrice(r.price_per_night)}/nuit</p>
+                        <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
+                          <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 20, background: r.status === 'active' ? 'rgba(34,211,165,0.1)' : 'rgba(251,191,36,0.1)', color: r.status === 'active' ? '#22d3a5' : '#fbbf24' }}>{r.status === 'active' ? 'Active' : 'Attente'}</span>
+                          {r.status === 'active' && <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 20, background: r.is_available ? 'rgba(96,165,250,0.1)' : 'rgba(248,113,113,0.1)', color: r.is_available ? '#60a5fa' : '#f87171' }}>{r.is_available ? 'Dispo' : 'Indispo'}</span>}
                         </div>
                       </div>
-                      <div className="dr-item-actions" style={{ display: 'flex', flexDirection: 'column', gap: 4, flexShrink: 0 }}>
-                        <Link href={`/residences/${r.id}`} style={{ fontSize: 11, color: accent, padding: '4px 10px', borderRadius: 8, border: '0.5px solid rgba(34,211,165,0.2)', background: 'rgba(34,211,165,0.08)', textDecoration: 'none', textAlign: 'center' }}>Voir</Link>
-                        <Link href={`/modifier/residence/${r.id}`} style={{ fontSize: 11, color: '#a78bfa', padding: '4px 10px', borderRadius: 8, border: '0.5px solid rgba(167,139,250,0.2)', background: 'rgba(167,139,250,0.08)', textDecoration: 'none', textAlign: 'center' }}>Modifier</Link>
-                        {r.status === 'active' && <button onClick={() => toggleAvailability(r.id, r.is_available)} style={{ fontSize: 11, color: '#60a5fa', padding: '4px 10px', borderRadius: 8, border: '0.5px solid rgba(96,165,250,0.2)', background: 'rgba(96,165,250,0.08)', cursor: 'pointer' }}>{r.is_available ? 'Bloquer' : 'Libérer'}</button>}
-                        <button onClick={() => deleteResidence(r.id)} style={{ fontSize: 11, color: '#f87171', padding: '4px 10px', borderRadius: 8, border: '0.5px solid rgba(248,113,113,0.2)', background: 'rgba(248,113,113,0.08)', cursor: 'pointer' }}>Retirer</button>
+                      <div className="dr-res-btns">
+                        <Link href={`/residences/${r.id}`} className="dr-rbtn" style={{ color: accent, border: '0.5px solid rgba(34,211,165,0.2)', background: 'rgba(34,211,165,0.08)' }}>Voir</Link>
+                        <Link href={`/modifier/residence/${r.id}`} className="dr-rbtn" style={{ color: '#a78bfa', border: '0.5px solid rgba(167,139,250,0.2)', background: 'rgba(167,139,250,0.08)' }}>Modifier</Link>
+                        {r.status === 'active' && <button onClick={() => toggleAvailability(r.id, r.is_available)} className="dr-rbtn" style={{ color: '#60a5fa', border: '0.5px solid rgba(96,165,250,0.2)', background: 'rgba(96,165,250,0.08)' }}>{r.is_available ? 'Bloquer' : 'Libérer'}</button>}
+                        <button onClick={() => deleteResidence(r.id)} className="dr-rbtn" style={{ color: '#f87171', border: '0.5px solid rgba(248,113,113,0.2)', background: 'rgba(248,113,113,0.08)' }}>Retirer</button>
                       </div>
                     </div>
                   ))}
                 </div>
               ) : (
-                <div style={{ textAlign: 'center', padding: '40px 20px' }}>
-                  <div style={{ fontSize: 40, color: 'rgba(255,255,255,0.06)', marginBottom: 12 }}>⌂</div>
-                  <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.3)', marginBottom: 16 }}>Aucune résidence publiée</p>
-                  <Link href="/publier/residence" style={{ fontSize: 13, color: accent, textDecoration: 'none', padding: '9px 18px', borderRadius: 10, border: '0.5px solid rgba(34,211,165,0.2)', background: 'rgba(34,211,165,0.08)' }}>Publier ma première résidence</Link>
+                <div style={{ textAlign: 'center', padding: '28px 0' }}>
+                  <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.3)', marginBottom: 12 }}>Aucune résidence publiée</p>
+                  <Link href="/publier/residence" style={{ fontSize: 13, color: accent, textDecoration: 'none', padding: '8px 16px', borderRadius: 10, border: '0.5px solid rgba(34,211,165,0.2)', background: 'rgba(34,211,165,0.08)' }}>Publier</Link>
                 </div>
               )}
             </div>
 
             {/* Réservations reçues */}
-            <div style={{ ...card, padding: 24 }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-                <h2 style={{ fontSize: 15, fontWeight: 700, color: '#fff' }}>Réservations reçues</h2>
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                  {bookings.filter(b => b.status === 'pending_contact').length > 0 && (
-                    <span style={{ fontSize: 11, fontWeight: 700, color: '#fbbf24', background: 'rgba(251,191,36,0.1)', padding: '3px 10px', borderRadius: 20, border: '0.5px solid rgba(251,191,36,0.2)' }}>
-                      {bookings.filter(b => b.status === 'pending_contact').length} en attente
-                    </span>
-                  )}
-                  <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', background: 'rgba(255,255,255,0.05)', padding: '3px 10px', borderRadius: 20 }}>{bookings.length}</span>
-                </div>
+            <div className="dr-card">
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+                <h2 style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>Réservations</h2>
+                <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', background: 'rgba(255,255,255,0.05)', padding: '2px 8px', borderRadius: 20 }}>{bookings.filter(b => b.status !== 'pending_contact').length}</span>
               </div>
-              {bookings.length > 0 ? (
-                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                  {bookings.slice(0, 8).map((b) => {
-                    const sc = getStatusColors(b.status)
-                    const isPending = b.status === 'pending_contact'
+              {bookings.filter(b => b.status !== 'pending_contact').length > 0 ? (
+                <div>
+                  {bookings.filter(b => b.status !== 'pending_contact').slice(0, 8).map(b => {
+                    const sc = b.status === 'confirmed' ? { c: '#22d3a5', bg: 'rgba(34,211,165,0.1)' } : b.status === 'cancelled' ? { c: '#f87171', bg: 'rgba(248,113,113,0.1)' } : { c: 'rgba(255,255,255,0.4)', bg: 'rgba(255,255,255,0.05)' }
                     return (
-                      <div key={b.id} className="dr-booking-row">
-                        <div className="dr-booking-top">
-                          <div>
-                            <p style={{ fontSize: 11, fontFamily: 'monospace', color: 'rgba(255,255,255,0.25)', marginBottom: 3 }}>{b.reference}</p>
-                            <p style={{ fontSize: 13, fontWeight: 600, color: '#fff', marginBottom: 2 }}>{b.client_name}</p>
-                            {b.client_phone && (
-                              <a href={`tel:${b.client_phone}`} style={{ fontSize: 11, color: '#60a5fa', textDecoration: 'none' }}>
-                                📞 {b.client_phone}
-                              </a>
-                            )}
-                            {b.start_date && <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginTop: 2 }}>{b.start_date} → {b.end_date}</p>}
-                          </div>
-                          <div style={{ textAlign: 'right' }}>
-                            <p style={{ fontSize: 13, fontWeight: 700, color: '#fff', marginBottom: 4 }}>{formatPrice(b.total_price)}</p>
-                            <span style={{ fontSize: 10, fontWeight: 600, padding: '3px 8px', borderRadius: 20, display: 'inline-block', background: sc.bg, color: sc.color, border: `0.5px solid ${sc.border}` }}>
-                              {getStatusLabel(b.status)}
-                            </span>
-                          </div>
+                      <div key={b.id} className="dr-book-row">
+                        <div style={{ minWidth: 0, flex: 1, marginRight: 10 }}>
+                          <p style={{ fontSize: 13, fontWeight: 600, color: '#fff', marginBottom: 2 }}>{b.client_name}</p>
+                          {b.start_date && <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)' }}>{b.start_date} → {b.end_date}</p>}
                         </div>
-
-                        {/* ✅ Boutons Confirmer / Refuser */}
-                        {isPending && (
-                          <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
-                            <button
-                              onClick={() => confirmBooking(b.id)}
-                              disabled={actionLoading === b.id + '_confirm'}
-                              style={{
-                                flex: 1, padding: '8px', borderRadius: 8, border: 'none',
-                                background: actionLoading === b.id + '_confirm' ? 'rgba(34,211,165,0.3)' : '#22d3a5',
-                                color: '#0a1a14', fontSize: 12, fontWeight: 700, cursor: 'pointer',
-                              }}
-                            >
-                              {actionLoading === b.id + '_confirm' ? '...' : '✓ Confirmer'}
-                            </button>
-                            <button
-                              onClick={() => rejectBooking(b.id)}
-                              disabled={actionLoading === b.id + '_reject'}
-                              style={{
-                                flex: 1, padding: '8px', borderRadius: 8,
-                                border: '0.5px solid rgba(248,113,113,0.3)',
-                                background: 'rgba(248,113,113,0.08)',
-                                color: '#f87171', fontSize: 12, fontWeight: 700, cursor: 'pointer',
-                              }}
-                            >
-                              {actionLoading === b.id + '_reject' ? '...' : '✕ Refuser'}
-                            </button>
-                          </div>
-                        )}
+                        <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                          <p style={{ fontSize: 13, fontWeight: 700, color: '#fff', marginBottom: 4 }}>{formatPrice(b.total_price)}</p>
+                          <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 8px', borderRadius: 20, color: sc.c, background: sc.bg }}>{b.status === 'confirmed' ? 'Confirmée' : b.status === 'cancelled' ? 'Annulée' : 'Terminée'}</span>
+                        </div>
                       </div>
                     )
                   })}
                 </div>
               ) : (
-                <div style={{ textAlign: 'center', padding: '40px 20px' }}>
-                  <div style={{ fontSize: 40, color: 'rgba(255,255,255,0.06)', marginBottom: 12 }}>◈</div>
-                  <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.3)' }}>Aucune réservation reçue</p>
+                <div style={{ textAlign: 'center', padding: '28px 0' }}>
+                  <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.3)' }}>Aucune réservation</p>
                 </div>
               )}
             </div>
