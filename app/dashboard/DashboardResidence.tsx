@@ -9,7 +9,7 @@ import { createClient } from '@/lib/supabase/client'
 
 type Profile = { full_name: string; city: string; account_type: string }
 
-export default function DashboardResidence({ profile, userId }: { profile: Profile; userId: string }) {
+export default function DashboardResidence({ profile, userId, showAll = false }: { profile: Profile; userId: string; showAll?: boolean }) {
   const [residences, setResidences] = useState<any[]>([])
   const [bookings, setBookings] = useState<any[]>([])
   const [stats, setStats] = useState({ confirmed: 0, revenus_nets: 0, commission: 0 })
