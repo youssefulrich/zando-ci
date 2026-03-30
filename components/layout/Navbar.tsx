@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import NotificationBell from '@/components/ui/NotificationBell'
 import type { User } from '@supabase/supabase-js'
 
 export default function Navbar() {
@@ -145,6 +146,8 @@ export default function Navbar() {
           <div className="znb-actions">
             {user ? (
               <>
+                {/* ✅ Cloche notifications — visible uniquement si connecté */}
+                <NotificationBell />
                 <Link href="/dashboard" className="znb-btn-ghost">Mon espace</Link>
                 <button onClick={handleLogout} className="znb-btn-ghost">Déconnexion</button>
               </>

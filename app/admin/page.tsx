@@ -40,7 +40,9 @@ export default async function AdminPage() {
   const totalCommission = confirmed.reduce((s: number, b: any) => s + (b.commission_amount || Math.round(b.total_price * 0.1)), 0)
   const totalOwner = confirmed.reduce((s: number, b: any) => s + (b.owner_amount || Math.round(b.total_price * 0.9)), 0)
 
+  // ✅ Inclure pending_contact dans les stats
   const byStatus = {
+    pending_contact: allBookings?.filter((b: any) => b.status === 'pending_contact').length ?? 0,
     pending: allBookings?.filter((b: any) => b.status === 'pending').length ?? 0,
     confirmed: allBookings?.filter((b: any) => b.status === 'confirmed').length ?? 0,
     cancelled: allBookings?.filter((b: any) => b.status === 'cancelled').length ?? 0,
@@ -58,9 +60,23 @@ export default async function AdminPage() {
   }
 
   const totalPending = (pendingResidencesRaw?.length ?? 0) + (pendingVehiclesRaw?.length ?? 0) + (pendingEventsRaw?.length ?? 0)
+  const totalPendingContact = byStatus.pending_contact
+
   const typeColors: Record<string, string> = { residence: '#22d3a5', vehicle: '#60a5fa', event: '#a78bfa' }
-  const statusColors: Record<string, string> = { confirmed: '#22d3a5', pending: '#fbbf24', cancelled: '#f87171', completed: 'rgba(255,255,255,0.4)' }
-  const statusLabels: Record<string, string> = { confirmed: 'Confirmée', pending: 'En attente', cancelled: 'Annulée', completed: 'Terminée' }
+  const statusColors: Record<string, string> = {
+    confirmed: '#22d3a5',
+    pending: '#fbbf24',
+    pending_contact: '#fb923c',
+    cancelled: '#f87171',
+    completed: 'rgba(255,255,255,0.4)'
+  }
+  const statusLabels: Record<string, string> = {
+    confirmed: 'Confirmée',
+    pending: 'Paiement en attente',
+    pending_contact: 'Contact en attente',
+    cancelled: 'Annulée',
+    completed: 'Terminée'
+  }
 
   return (
     <>
@@ -68,7 +84,7 @@ export default async function AdminPage() {
         * { box-sizing: border-box; }
         .adm-wrap { max-width: 1400px; margin: 0 auto; padding: 40px 48px; }
         .adm-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 40px; gap: 16px; }
-        .adm-kpis { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 20px; }
+        .adm-kpis { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; margin-bottom: 20px; }
         .adm-stats3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 20px; }
         .adm-solde-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; margin-bottom: 20px; }
         .adm-users-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
@@ -79,7 +95,6 @@ export default async function AdminPage() {
           .adm-header { flex-direction: column; }
           .adm-header-badges { flex-direction: column; gap: 8px; }
           .adm-kpis { grid-template-columns: repeat(2, 1fr); }
-          .adm-kpis > div:last-child { grid-column: span 2; }
           .adm-stats3 { grid-template-columns: 1fr; }
           .adm-solde-grid { grid-template-columns: repeat(2, 1fr); }
           .adm-users-grid { grid-template-columns: 1fr; }
@@ -126,6 +141,13 @@ export default async function AdminPage() {
               <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.3)' }}>Vue complète · ZandoCI · {new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
             </div>
             <div className="adm-header-badges" style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+              {/* ✅ Badge demandes contact en attente */}
+              {totalPendingContact > 0 && (
+                <div style={{ background: 'rgba(251,146,60,0.08)', border: '0.5px solid rgba(251,146,60,0.22)', borderRadius: 12, padding: '10px 16px' }}>
+                  <p style={{ fontSize: 13, fontWeight: 700, color: '#fb923c', marginBottom: 1 }}>📞 {totalPendingContact} contact en attente</p>
+                  <p style={{ fontSize: 11, color: 'rgba(251,146,60,0.5)' }}>Propriétaires à contacter</p>
+                </div>
+              )}
               {totalPending > 0 && (
                 <div style={{ background: 'rgba(251,191,36,0.08)', border: '0.5px solid rgba(251,191,36,0.22)', borderRadius: 12, padding: '10px 16px' }}>
                   <p style={{ fontSize: 13, fontWeight: 700, color: '#fbbf24', marginBottom: 1 }}>⚠️ {totalPending} à valider</p>
@@ -183,13 +205,14 @@ export default async function AdminPage() {
             )}
           </div>
 
-          {/* KPIs */}
+          {/* KPIs — ✅ ajout pending_contact */}
           <div className="adm-kpis">
             {[
               { label: 'Utilisateurs', value: allProfiles?.length ?? 0, color: '#a78bfa', bg: 'rgba(167,139,250,0.08)', border: 'rgba(167,139,250,0.15)' },
               { label: 'Réservations', value: allBookings?.length ?? 0, color: '#f1f5f9', bg: 'rgba(255,255,255,0.03)', border: 'rgba(255,255,255,0.07)' },
               { label: 'Confirmées', value: byStatus.confirmed, color: '#22d3a5', bg: 'rgba(34,211,165,0.06)', border: 'rgba(34,211,165,0.15)' },
-              { label: 'En attente', value: byStatus.pending, color: '#fbbf24', bg: 'rgba(251,191,36,0.06)', border: 'rgba(251,191,36,0.15)' },
+              { label: 'Contact en attente', value: byStatus.pending_contact, color: '#fb923c', bg: 'rgba(251,146,60,0.06)', border: 'rgba(251,146,60,0.15)' },
+              { label: 'Paiement en attente', value: byStatus.pending, color: '#fbbf24', bg: 'rgba(251,191,36,0.06)', border: 'rgba(251,191,36,0.15)' },
               { label: 'Annulées', value: byStatus.cancelled, color: '#f87171', bg: 'rgba(248,113,113,0.06)', border: 'rgba(248,113,113,0.15)' },
             ].map((s, i) => (
               <div key={i} className="adm-kpi-card" style={{ background: s.bg, border: `0.5px solid ${s.border}` }}>
@@ -297,20 +320,31 @@ export default async function AdminPage() {
                   {allBookings?.slice(0, 25).map((b: any) => {
                     const commission = b.commission_amount || Math.round(b.total_price * 0.1)
                     const ownerAmt = b.owner_amount || Math.round(b.total_price * 0.9)
-                    const payMethod = b.payments?.payment_method?.replace(/_/g, ' ') ?? '—'
+                    const payMethod = b.status === 'pending_contact'
+                      ? 'Contact direct'
+                      : (b.payments?.payment_method?.replace(/_/g, ' ') ?? '—')
                     const sc = statusColors[b.status] ?? '#fff'
                     const tc = typeColors[b.item_type] ?? '#fff'
                     return (
                       <tr key={b.id} className="adm-tr" style={{ borderBottom: '0.5px solid rgba(255,255,255,0.04)' }}>
                         <td style={{ padding: '12px 16px 12px 0', fontSize: 11, fontFamily: 'monospace', color: 'rgba(255,255,255,0.3)', whiteSpace: 'nowrap' }}>{b.reference}</td>
-                        <td style={{ padding: '12px 16px 12px 0', fontSize: 13, color: '#e2e8f0', whiteSpace: 'nowrap' }}>{b.client_name}</td>
+                        <td style={{ padding: '12px 16px 12px 0' }}>
+                          <p style={{ fontSize: 13, color: '#e2e8f0', whiteSpace: 'nowrap' }}>{b.client_name}</p>
+                          {b.client_phone && (
+                            <p style={{ fontSize: 11, color: '#60a5fa' }}>{b.client_phone}</p>
+                          )}
+                        </td>
                         <td style={{ padding: '12px 16px 12px 0' }}>
                           <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20, color: tc, background: `${tc}15`, border: `0.5px solid ${tc}30`, textTransform: 'capitalize', whiteSpace: 'nowrap' }}>{b.item_type}</span>
                         </td>
                         <td style={{ padding: '12px 16px 12px 0', fontSize: 13, fontWeight: 700, color: '#f1f5f9', whiteSpace: 'nowrap' }}>{formatPrice(b.total_price)}</td>
-                        <td style={{ padding: '12px 16px 12px 0', fontSize: 13, fontWeight: 700, color: '#22d3a5', whiteSpace: 'nowrap' }}>+{formatPrice(commission)}</td>
-                        <td style={{ padding: '12px 16px 12px 0', fontSize: 13, color: 'rgba(255,255,255,0.4)', whiteSpace: 'nowrap' }}>{formatPrice(ownerAmt)}</td>
-                        <td style={{ padding: '12px 16px 12px 0', fontSize: 12, color: 'rgba(255,255,255,0.35)', textTransform: 'capitalize', whiteSpace: 'nowrap' }}>{payMethod}</td>
+                        <td style={{ padding: '12px 16px 12px 0', fontSize: 13, fontWeight: 700, color: '#22d3a5', whiteSpace: 'nowrap' }}>
+                          {b.status === 'pending_contact' ? '—' : `+${formatPrice(commission)}`}
+                        </td>
+                        <td style={{ padding: '12px 16px 12px 0', fontSize: 13, color: 'rgba(255,255,255,0.4)', whiteSpace: 'nowrap' }}>
+                          {b.status === 'pending_contact' ? '—' : formatPrice(ownerAmt)}
+                        </td>
+                        <td style={{ padding: '12px 16px 12px 0', fontSize: 12, color: 'rgba(255,255,255,0.35)', whiteSpace: 'nowrap' }}>{payMethod}</td>
                         <td style={{ padding: '12px 16px 12px 0' }}>
                           <span style={{ fontSize: 10, fontWeight: 600, padding: '3px 8px', borderRadius: 20, color: sc, background: `${sc}15`, border: `0.5px solid ${sc}30`, whiteSpace: 'nowrap' }}>{statusLabels[b.status] ?? b.status}</span>
                         </td>
@@ -340,8 +374,8 @@ export default async function AdminPage() {
                 const utLabels: Record<string, string> = { client: 'Client', owner_residence: 'Propriétaire', owner_vehicle: 'Loueur', owner_event: 'Organisateur' }
                 const col = utColors[p.account_type] ?? '#fff'
                 return (
-                  <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '11px 14px', background: 'rgba(255,255,255,0.02)', border: '0.5px solid rgba(255,255,255,0.05)', borderRadius: 12, transition: 'border-color 0.15s' }}>
-                    <div style={{ width: 38, height: 38, borderRadius: '50%', background: `${col}12`, border: `0.5px solid ${col}25`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 800, color: col, flexShrink: 0, letterSpacing: 0 }}>
+                  <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '11px 14px', background: 'rgba(255,255,255,0.02)', border: '0.5px solid rgba(255,255,255,0.05)', borderRadius: 12 }}>
+                    <div style={{ width: 38, height: 38, borderRadius: '50%', background: `${col}12`, border: `0.5px solid ${col}25`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 800, color: col, flexShrink: 0 }}>
                       {p.full_name?.slice(0, 2).toUpperCase()}
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
