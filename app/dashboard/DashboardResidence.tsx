@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import Navbar from '@/components/layout/Navbar'
+import NotificationBell from '@/components/ui/NotificationBell'
 import { formatPrice } from '@/lib/utils'
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
@@ -12,8 +13,13 @@ export default function DashboardResidence({ profile, userId, showAll = false }:
   const [residences, setResidences] = useState<any[]>([])
   const [bookings, setBookings] = useState<any[]>([])
   const [stats, setStats] = useState({ confirmed: 0, revenus_nets: 0, commission: 0 })
+  const [actionLoading, setActionLoading] = useState<string | null>(null)
 
   useEffect(() => {
+    loadData()
+  }, [userId])
+
+  async function loadData() {
     const supabase = createClient()
     supabase.from('residences').select('*').eq('owner_id', userId).order('created_at', { ascending: false })
       .then(({ data }) => setResidences((data ?? []) as any[]))
@@ -31,7 +37,7 @@ export default function DashboardResidence({ profile, userId, showAll = false }:
         const com = confirmed.reduce((s: number, b: any) => s + (b.commission_amount || Math.round(b.total_price * 0.1)), 0)
         setStats({ confirmed: confirmed.length, revenus_nets: brut - com, commission: com })
       })
-  }, [userId])
+  }
 
   async function toggleAvailability(id: string, current: boolean) {
     const supabase = createClient()
@@ -46,6 +52,45 @@ export default function DashboardResidence({ profile, userId, showAll = false }:
     setResidences(prev => prev.filter(r => r.id !== id))
   }
 
+  // ✅ Confirmer une réservation pending_contact
+  async function confirmBooking(bookingId: string) {
+    if (!confirm('Confirmer cette réservation ?')) return
+    setActionLoading(bookingId + '_confirm')
+    const supabase = createClient()
+    await supabase.from('bookings').update({ status: 'confirmed' }).eq('id', bookingId)
+    setBookings(prev => prev.map(b => b.id === bookingId ? { ...b, status: 'confirmed' } : b))
+    setActionLoading(null)
+  }
+
+  // ✅ Refuser une réservation pending_contact
+  async function rejectBooking(bookingId: string) {
+    if (!confirm('Refuser cette réservation ?')) return
+    setActionLoading(bookingId + '_reject')
+    const supabase = createClient()
+    await supabase.from('bookings').update({ status: 'cancelled' }).eq('id', bookingId)
+    setBookings(prev => prev.map(b => b.id === bookingId ? { ...b, status: 'cancelled' } : b))
+    setActionLoading(null)
+  }
+
+  function getStatusLabel(status: string) {
+    switch (status) {
+      case 'confirmed': return 'Confirmée'
+      case 'pending_contact': return 'En attente'
+      case 'pending': return 'En attente'
+      case 'cancelled': return 'Annulée'
+      default: return status
+    }
+  }
+
+  function getStatusColors(status: string) {
+    switch (status) {
+      case 'confirmed': return { bg: 'rgba(34,211,165,0.1)', color: '#22d3a5', border: 'rgba(34,211,165,0.2)' }
+      case 'pending_contact':
+      case 'pending': return { bg: 'rgba(251,191,36,0.1)', color: '#fbbf24', border: 'rgba(251,191,36,0.2)' }
+      default: return { bg: 'rgba(248,113,113,0.1)', color: '#f87171', border: 'rgba(248,113,113,0.2)' }
+    }
+  }
+
   const accent = '#22d3a5'
   const card = { background: '#111827', border: '0.5px solid rgba(255,255,255,0.08)', borderRadius: 16 }
 
@@ -58,7 +103,9 @@ export default function DashboardResidence({ profile, userId, showAll = false }:
         .dr-revbar { display: flex; align-items: center; gap: 32px; }
         .dr-revlegend { display: flex; gap: 24px; flex-shrink: 0; }
         .dr-two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        .dr-booking-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; }
+        .dr-booking-row { padding: 14px 0; border-bottom: 0.5px solid rgba(255,255,255,0.05); }
+        .dr-booking-row:last-child { border-bottom: none; }
+        .dr-booking-top { display: flex; justify-content: space-between; align-items: flex-start; }
 
         @media (max-width: 767px) {
           .dr-wrap { padding: 24px 16px; }
@@ -68,7 +115,6 @@ export default function DashboardResidence({ profile, userId, showAll = false }:
           .dr-revbar { flex-direction: column; gap: 16px; align-items: flex-start; }
           .dr-revlegend { gap: 16px; }
           .dr-two-col { grid-template-columns: 1fr; }
-          .dr-booking-row { flex-direction: column; align-items: flex-start; gap: 6px; }
           .dr-item-actions { flex-direction: row !important; flex-wrap: wrap; gap: 6px !important; }
           .dr-title { font-size: 26px !important; }
         }
@@ -90,10 +136,12 @@ export default function DashboardResidence({ profile, userId, showAll = false }:
               <h1 className="dr-title" style={{ fontSize: 32, fontWeight: 800, color: '#fff', letterSpacing: -1, marginBottom: 6 }}>Bonjour, {profile.full_name.split(' ')[0]}</h1>
               <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.35)' }}>{profile.city} · Propriétaire résidences</p>
             </div>
-            <Link href="/publier/residence" style={{ padding: '12px 22px', background: accent, color: '#0a1a14', borderRadius: 12, fontSize: 13, fontWeight: 700, textDecoration: 'none', whiteSpace: 'nowrap' }}>+ Nouvelle résidence</Link>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <NotificationBell />
+              <Link href="/publier/residence" style={{ padding: '12px 22px', background: accent, color: '#0a1a14', borderRadius: 12, fontSize: 13, fontWeight: 700, textDecoration: 'none', whiteSpace: 'nowrap' }}>+ Nouvelle résidence</Link>
+            </div>
           </div>
 
-          {/* Stats */}
           <div className="dr-stats">
             {[
               { label: 'Résidences', value: residences.length, color: accent },
@@ -108,7 +156,6 @@ export default function DashboardResidence({ profile, userId, showAll = false }:
             ))}
           </div>
 
-          {/* Barre revenus */}
           {stats.revenus_nets > 0 && (
             <div style={{ ...card, padding: '20px 24px', marginBottom: 32 }}>
               <div className="dr-revbar">
@@ -173,26 +220,72 @@ export default function DashboardResidence({ profile, userId, showAll = false }:
             <div style={{ ...card, padding: 24 }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
                 <h2 style={{ fontSize: 15, fontWeight: 700, color: '#fff' }}>Réservations reçues</h2>
-                <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', background: 'rgba(255,255,255,0.05)', padding: '3px 10px', borderRadius: 20 }}>{bookings.length}</span>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  {bookings.filter(b => b.status === 'pending_contact').length > 0 && (
+                    <span style={{ fontSize: 11, fontWeight: 700, color: '#fbbf24', background: 'rgba(251,191,36,0.1)', padding: '3px 10px', borderRadius: 20, border: '0.5px solid rgba(251,191,36,0.2)' }}>
+                      {bookings.filter(b => b.status === 'pending_contact').length} en attente
+                    </span>
+                  )}
+                  <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', background: 'rgba(255,255,255,0.05)', padding: '3px 10px', borderRadius: 20 }}>{bookings.length}</span>
+                </div>
               </div>
               {bookings.length > 0 ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                  {bookings.slice(0, 8).map((b, i) => (
-                    <div key={b.id} className="dr-booking-row" style={{ borderBottom: i < 7 ? '0.5px solid rgba(255,255,255,0.05)' : 'none' }}>
-                      <div>
-                        <p style={{ fontSize: 11, fontFamily: 'monospace', color: 'rgba(255,255,255,0.25)', marginBottom: 3 }}>{b.reference}</p>
-                        <p style={{ fontSize: 13, fontWeight: 600, color: '#fff', marginBottom: 2 }}>{b.client_name}</p>
-                        {b.start_date && <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)' }}>{b.start_date} → {b.end_date}</p>}
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  {bookings.slice(0, 8).map((b) => {
+                    const sc = getStatusColors(b.status)
+                    const isPending = b.status === 'pending_contact'
+                    return (
+                      <div key={b.id} className="dr-booking-row">
+                        <div className="dr-booking-top">
+                          <div>
+                            <p style={{ fontSize: 11, fontFamily: 'monospace', color: 'rgba(255,255,255,0.25)', marginBottom: 3 }}>{b.reference}</p>
+                            <p style={{ fontSize: 13, fontWeight: 600, color: '#fff', marginBottom: 2 }}>{b.client_name}</p>
+                            {b.client_phone && (
+                              <a href={`tel:${b.client_phone}`} style={{ fontSize: 11, color: '#60a5fa', textDecoration: 'none' }}>
+                                📞 {b.client_phone}
+                              </a>
+                            )}
+                            {b.start_date && <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginTop: 2 }}>{b.start_date} → {b.end_date}</p>}
+                          </div>
+                          <div style={{ textAlign: 'right' }}>
+                            <p style={{ fontSize: 13, fontWeight: 700, color: '#fff', marginBottom: 4 }}>{formatPrice(b.total_price)}</p>
+                            <span style={{ fontSize: 10, fontWeight: 600, padding: '3px 8px', borderRadius: 20, display: 'inline-block', background: sc.bg, color: sc.color, border: `0.5px solid ${sc.border}` }}>
+                              {getStatusLabel(b.status)}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* ✅ Boutons Confirmer / Refuser */}
+                        {isPending && (
+                          <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+                            <button
+                              onClick={() => confirmBooking(b.id)}
+                              disabled={actionLoading === b.id + '_confirm'}
+                              style={{
+                                flex: 1, padding: '8px', borderRadius: 8, border: 'none',
+                                background: actionLoading === b.id + '_confirm' ? 'rgba(34,211,165,0.3)' : '#22d3a5',
+                                color: '#0a1a14', fontSize: 12, fontWeight: 700, cursor: 'pointer',
+                              }}
+                            >
+                              {actionLoading === b.id + '_confirm' ? '...' : '✓ Confirmer'}
+                            </button>
+                            <button
+                              onClick={() => rejectBooking(b.id)}
+                              disabled={actionLoading === b.id + '_reject'}
+                              style={{
+                                flex: 1, padding: '8px', borderRadius: 8,
+                                border: '0.5px solid rgba(248,113,113,0.3)',
+                                background: 'rgba(248,113,113,0.08)',
+                                color: '#f87171', fontSize: 12, fontWeight: 700, cursor: 'pointer',
+                              }}
+                            >
+                              {actionLoading === b.id + '_reject' ? '...' : '✕ Refuser'}
+                            </button>
+                          </div>
+                        )}
                       </div>
-                      <div style={{ textAlign: 'right' }}>
-                        <p style={{ fontSize: 13, fontWeight: 700, color: '#fff', marginBottom: 2 }}>{formatPrice(b.total_price)}</p>
-                        {b.owner_amount > 0 && <p style={{ fontSize: 11, color: accent, marginBottom: 4 }}>{formatPrice(b.owner_amount)}</p>}
-                        <span style={{ fontSize: 10, fontWeight: 600, padding: '3px 8px', borderRadius: 20, display: 'inline-block', background: b.status === 'confirmed' ? 'rgba(34,211,165,0.1)' : b.status === 'pending' ? 'rgba(251,191,36,0.1)' : 'rgba(248,113,113,0.1)', color: b.status === 'confirmed' ? '#22d3a5' : b.status === 'pending' ? '#fbbf24' : '#f87171', border: `0.5px solid ${b.status === 'confirmed' ? 'rgba(34,211,165,0.2)' : b.status === 'pending' ? 'rgba(251,191,36,0.2)' : 'rgba(248,113,113,0.2)'}` }}>
-                          {b.status === 'confirmed' ? 'Confirmée' : b.status === 'pending' ? 'En attente' : 'Annulée'}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               ) : (
                 <div style={{ textAlign: 'center', padding: '40px 20px' }}>
