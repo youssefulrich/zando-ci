@@ -7,9 +7,11 @@ import Navbar from '@/components/layout/Navbar'
 
 function formatPhone(phone: string): string {
   let p = phone.replace(/\s/g, '').replace(/[^0-9+]/g, '')
-  if (p.startsWith('0')) p = '225' + p.slice(1)
   if (p.startsWith('+')) p = p.slice(1)
-  if (!p.startsWith('225')) p = '225' + p
+  if (p.startsWith('00225')) p = p.slice(2)
+  else if (p.startsWith('225')) { /* ok */ }
+  else if (p.startsWith('0')) p = '225' + p
+  else p = '225' + p
   return p
 }
 
