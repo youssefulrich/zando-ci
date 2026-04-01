@@ -54,6 +54,7 @@ export default function DashboardResidence({ profile, userId, showAll = false }:
     const supabase = createClient()
     await supabase.from('bookings').update({ status: 'confirmed' }).eq('id', id)
     setBookings(prev => prev.map(b => b.id === id ? { ...b, status: 'confirmed' } : b))
+    await loadData() // ← AJOUTEZ
     setActionLoading(null)
   }
 
@@ -63,6 +64,7 @@ export default function DashboardResidence({ profile, userId, showAll = false }:
     const supabase = createClient()
     await supabase.from('bookings').update({ status: 'cancelled' }).eq('id', id)
     setBookings(prev => prev.map(b => b.id === id ? { ...b, status: 'cancelled' } : b))
+    await loadData() // ← AJOUTEZ
     setActionLoading(null)
   }
 
