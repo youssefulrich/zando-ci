@@ -29,8 +29,8 @@ export default function ModifierEvenementPage() {
   })
 
   // Photo state
-  const [currentPhoto, setCurrentPhoto] = useState<string | null>(null) // URL existante
-  const [newPhotoFile, setNewPhotoFile] = useState<File | null>(null)   // Nouveau fichier
+  const [currentPhoto, setCurrentPhoto] = useState<string | null>(null)
+  const [newPhotoFile, setNewPhotoFile] = useState<File | null>(null)
   const [newPhotoPreview, setNewPhotoPreview] = useState<string | null>(null)
   const [uploadingPhoto, setUploadingPhoto] = useState(false)
 
@@ -82,7 +82,6 @@ export default function ModifierEvenementPage() {
 
     let finalPhotoUrl = currentPhoto
 
-    // Upload nouvelle photo si sélectionnée
     if (newPhotoFile && user) {
       setUploadingPhoto(true)
       const ext = newPhotoFile.name.split('.').pop()
@@ -224,7 +223,6 @@ export default function ModifierEvenementPage() {
             <div style={{ position: 'relative', display: 'inline-block' }}>
               <img src={displayPhoto} alt="" style={{ width: 200, height: 130, objectFit: 'cover', borderRadius: 12, display: 'block' }} />
               <div style={{ position: 'absolute', top: 8, right: 8, display: 'flex', gap: 6 }}>
-                {/* Bouton changer */}
                 <label style={{
                   padding: '6px 12px', borderRadius: 8, cursor: 'pointer', fontSize: 11, fontWeight: 600,
                   background: 'rgba(167,139,250,0.9)', color: '#fff', backdropFilter: 'blur(4px)',
@@ -232,7 +230,6 @@ export default function ModifierEvenementPage() {
                   Changer
                   <input type="file" accept="image/*" onChange={handlePhotoChange} style={{ display: 'none' }} />
                 </label>
-                {/* Bouton supprimer */}
                 <button onClick={removePhoto} style={{
                   padding: '6px 10px', borderRadius: 8, cursor: 'pointer', fontSize: 11, fontWeight: 600,
                   background: 'rgba(239,68,68,0.9)', color: '#fff', border: 'none', backdropFilter: 'blur(4px)',
