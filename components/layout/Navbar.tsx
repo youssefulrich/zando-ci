@@ -33,6 +33,7 @@ export default function Navbar() {
     { href: '/residences', label: 'Résidences', accent: '#22d3a5' },
     { href: '/vehicles', label: 'Véhicules', accent: '#60a5fa' },
     { href: '/events', label: 'Événements', accent: '#a78bfa' },
+    { href: '/boutique', label: 'Boutique', accent: '#22d3a5' },
   ]
 
   return (

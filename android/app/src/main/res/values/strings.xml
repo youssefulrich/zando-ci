@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Zando CI</string>
+    <string name="title_activity_main">Zando CI</string>
+    <string name="package_name">ci.zando.app</string>
+    <string name="custom_url_scheme">ci.zando.app</string>
+</resources>

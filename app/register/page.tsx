@@ -22,6 +22,7 @@ const ACCOUNT_TYPES = [
   { value: 'owner_residence', label: 'Propriétaire', desc: 'Je loue des résidences', icon: '⌂' },
   { value: 'owner_vehicle', label: 'Loueur véhicule', desc: 'Je loue des véhicules', icon: '◈' },
   { value: 'owner_event', label: 'Organisateur', desc: 'Je crée des événements', icon: '◉' },
+  { value: 'seller', label: 'Vendeur', desc: 'Je vends des produits', icon: '🛍️' },
 ]
 
 type FormData = {

@@ -4,6 +4,9 @@ import DashboardClient from './DashboardClient'
 import DashboardResidence from './DashboardResidence'
 import DashboardVehicule from './DashboardVehicule'
 import DashboardEvenement from './DashboardEvenement'
+import DashboardVendeur from './DashboardVendeur'
+
+
 
 type Profile = { full_name: string; city: string; account_type: string }
 
@@ -19,5 +22,7 @@ export default function DashboardRouter({ profile, userId }: { profile: Profile;
       return <DashboardResidence profile={profile} userId={userId} showAll />
     default:
       return <DashboardClient profile={profile} userId={userId} />
+    case 'seller':
+      return <DashboardVendeur profile={profile} userId={userId} />
   }
 }

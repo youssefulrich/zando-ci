@@ -3,6 +3,12 @@ import { notFound, redirect } from 'next/navigation'
 import Navbar from '@/components/layout/Navbar'
 import { formatDate } from '@/lib/utils'
 
+// ✅ Requis pour output: export avec routes dynamiques
+export function generateStaticParams() {
+  return []
+}
+export const dynamic = 'force-dynamic'
+
 export default async function OrgaScanPage({ params }: { params: Promise<{ eventId: string }> }) {
   const { eventId } = await params
   const supabase = await createClient()
@@ -10,7 +16,6 @@ export default async function OrgaScanPage({ params }: { params: Promise<{ event
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  // Vérifier que l'event appartient à cet organisateur
   const { data: event } = await supabase
     .from('events')
     .select('id, title, event_date, event_time, venue_name, total_capacity, tickets_sold')
@@ -20,7 +25,6 @@ export default async function OrgaScanPage({ params }: { params: Promise<{ event
 
   if (!event) notFound()
 
-  // Récupérer tous les tickets de cet événement
   const { data: tickets } = await supabase
     .from('tickets')
     .select('*, bookings(client_name, client_phone, reference)')
@@ -28,8 +32,8 @@ export default async function OrgaScanPage({ params }: { params: Promise<{ event
     .order('created_at', { ascending: false })
 
   const allTickets = tickets ?? []
-  const validCount = allTickets.filter(t => t.status === 'valid').length
-  const usedCount = allTickets.filter(t => t.status === 'used').length
+  const validCount = allTickets.filter((t: any) => t.status === 'valid').length
+  const usedCount = allTickets.filter((t: any) => t.status === 'used').length
   const total = allTickets.length
 
   return (
@@ -48,16 +52,14 @@ export default async function OrgaScanPage({ params }: { params: Promise<{ event
         <Navbar />
         <div className="scan-wrap">
 
-          {/* Header */}
           <div style={{ marginBottom: 28 }}>
-            <div style={{ fontSize: 11, color: '#a78bfa', textTransform: 'uppercase', letterSpacing: 2, fontWeight: 600, marginBottom: 8 }}>Contrôle d'accès</div>
+            <div style={{ fontSize: 11, color: '#a78bfa', textTransform: 'uppercase', letterSpacing: 2, fontWeight: 600, marginBottom: 8 }}>Contrôle d&apos;accès</div>
             <h1 style={{ fontSize: 26, fontWeight: 800, color: '#fff', letterSpacing: -0.8, marginBottom: 6 }}>{event.title}</h1>
             <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.4)' }}>
               {formatDate(event.event_date)}{event.event_time ? ` à ${event.event_time.slice(0, 5)}` : ''} · {event.venue_name}
             </p>
           </div>
 
-          {/* Stats */}
           <div className="scan-stats">
             {[
               { label: 'Total billets', value: total, color: '#fff' },
@@ -72,7 +74,6 @@ export default async function OrgaScanPage({ params }: { params: Promise<{ event
             ))}
           </div>
 
-          {/* Barre progression */}
           {total > 0 && (
             <div style={{ background: '#111827', border: '0.5px solid rgba(255,255,255,0.08)', borderRadius: 14, padding: '16px 20px', marginBottom: 24 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
@@ -80,26 +81,21 @@ export default async function OrgaScanPage({ params }: { params: Promise<{ event
                 <span style={{ fontSize: 12, color: '#fbbf24', fontWeight: 600 }}>{usedCount} / {total}</span>
               </div>
               <div style={{ height: 6, background: 'rgba(255,255,255,0.05)', borderRadius: 3, overflow: 'hidden' }}>
-                <div style={{ height: '100%', background: 'linear-gradient(90deg, #fbbf24, #f59e0b)', borderRadius: 3, width: `${Math.round(usedCount / total * 100)}%`, transition: 'width 0.5s ease' }} />
+                <div style={{ height: '100%', background: '#fbbf24', borderRadius: 3, width: `${Math.round(usedCount / total * 100)}%` }} />
               </div>
             </div>
           )}
 
-          {/* Lien vers page scan rapide */}
           <div style={{ background: 'rgba(167,139,250,0.06)', border: '0.5px solid rgba(167,139,250,0.2)', borderRadius: 14, padding: '16px 20px', marginBottom: 24, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
             <div>
-              <p style={{ fontSize: 14, fontWeight: 600, color: '#fff', marginBottom: 4 }}>📱 Scanner un billet</p>
-              <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>Ouvrez la caméra de votre téléphone et pointez sur le QR code du client</p>
+              <p style={{ fontSize: 14, fontWeight: 600, color: '#fff', marginBottom: 4 }}>Scanner un billet</p>
+              <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>Pointez la caméra sur le QR code du client</p>
             </div>
-            <a
-              href={`https://zando-ci.vercel.app/verify/`}
-              style={{ padding: '10px 20px', background: '#a78bfa', color: '#1a0a3d', borderRadius: 10, fontSize: 13, fontWeight: 700, textDecoration: 'none', whiteSpace: 'nowrap' }}
-            >
+            <a href={`/verify/`} style={{ padding: '10px 20px', background: '#a78bfa', color: '#1a0a3d', borderRadius: 10, fontSize: 13, fontWeight: 700, textDecoration: 'none', whiteSpace: 'nowrap' }}>
               Saisir un code →
             </a>
           </div>
 
-          {/* Tableau des tickets */}
           <div style={{ background: '#111827', border: '0.5px solid rgba(255,255,255,0.08)', borderRadius: 16, padding: 24 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 10 }}>
               <h2 style={{ fontSize: 15, fontWeight: 700, color: '#fff' }}>Liste des billets</h2>
@@ -125,15 +121,15 @@ export default async function OrgaScanPage({ params }: { params: Promise<{ event
                       return (
                         <tr key={t.id} style={{ borderBottom: '0.5px solid rgba(255,255,255,0.04)' }}>
                           <td style={{ padding: '12px 16px 12px 0' }}>
-                            <a href={`/verify/${t.code}`} target="_blank" style={{ fontSize: 11, fontFamily: 'monospace', color: '#60a5fa', textDecoration: 'none' }}>
-                              {t.code}
+                            <a href={`/verify/${t.ticket_code}`} target="_blank" style={{ fontSize: 11, fontFamily: 'monospace', color: '#60a5fa', textDecoration: 'none' }}>
+                              {t.ticket_code}
                             </a>
                           </td>
                           <td style={{ padding: '12px 16px 12px 0', fontSize: 13, color: '#e2e8f0', whiteSpace: 'nowrap' }}>
                             {booking?.client_name ?? '—'}
                           </td>
                           <td style={{ padding: '12px 16px 12px 0', fontSize: 12, color: 'rgba(255,255,255,0.4)', whiteSpace: 'nowrap' }}>
-                            {t.ticket_number} / {t.total_in_booking}
+                            {t.ticket_number}
                           </td>
                           <td style={{ padding: '12px 16px 12px 0' }}>
                             <span style={{ fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 20, color: sc, background: `${sc}15`, border: `0.5px solid ${sc}30`, whiteSpace: 'nowrap' }}>
@@ -141,7 +137,7 @@ export default async function OrgaScanPage({ params }: { params: Promise<{ event
                             </span>
                           </td>
                           <td style={{ padding: '12px 0', fontSize: 11, color: 'rgba(255,255,255,0.25)', whiteSpace: 'nowrap' }}>
-                            {t.scanned_at ? new Date(t.scanned_at).toLocaleString('fr-FR') : '—'}
+                            {t.used_at ? new Date(t.used_at).toLocaleString('fr-FR') : '—'}
                           </td>
                         </tr>
                       )
@@ -152,11 +148,10 @@ export default async function OrgaScanPage({ params }: { params: Promise<{ event
             ) : (
               <div style={{ textAlign: 'center', padding: '40px 20px' }}>
                 <div style={{ fontSize: 36, color: 'rgba(255,255,255,0.06)', marginBottom: 12 }}>🎫</div>
-                <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.3)' }}>Aucun billet vendu pour l'instant</p>
+                <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.3)' }}>Aucun billet vendu pour l&apos;instant</p>
               </div>
             )}
           </div>
-
         </div>
       </div>
     </>
