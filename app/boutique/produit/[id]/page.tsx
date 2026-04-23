@@ -1,13 +1,14 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, use } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Navbar from '@/components/layout/Navbar'
 import { createClient } from '@/lib/supabase/client'
 import { formatPrice } from '@/lib/utils'
 
-export default function ProduitDetailPage({ params }: { params: { id: string } }) {
+export default function ProduitDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params) // ✅ Next.js 15 — unwrap la Promise
   const router = useRouter()
   const [product, setProduct] = useState<any>(null)
   const [shop, setShop] = useState<any>(null)
@@ -28,17 +29,17 @@ export default function ProduitDetailPage({ params }: { params: { id: string } }
       }
     })
 
-    supabase.from('products').select('*, shops(*)').eq('id', params.id).single()
-      .then(({ data }) => {
+    // ✅ Accepter produits active ET pending (pour le propriétaire)
+    ;(supabase as any).from('products').select('*, shops(*)').eq('id', id).single()
+      .then(({ data }: any) => {
         if (data) {
           setProduct(data)
-          setShop((data as any).shops)
-          // Incrémenter les vues
-          supabase.from('products').update({ views: ((data as any).views ?? 0) + 1 }).eq('id', params.id)
+          setShop(data.shops)
+          supabase.from('products').update({ views: (data.views ?? 0) + 1 }).eq('id', id)
         }
         setLoading(false)
       })
-  }, [params.id])
+  }, [id])
 
   function formatPhone(phone: string): string {
     let p = phone.replace(/\s/g, '').replace(/[^0-9+]/g, '')
@@ -58,11 +59,12 @@ export default function ProduitDetailPage({ params }: { params: { id: string } }
     const total = product.price * quantity
     const deliveryTotal = product.delivery_available ? (product.delivery_price ?? 0) : 0
     const grandTotal = total + deliveryTotal
+    const commission = Math.round(grandTotal * 0.10)
+    const sellerAmount = grandTotal - commission
 
-    // Créer la commande
     const ref = 'ZDO-' + Math.random().toString(36).slice(2, 10).toUpperCase()
 
-    const { data: order, error } = await supabase.from('orders').insert({
+    const { data: order, error } = await (supabase as any).from('orders').insert({
       reference: ref,
       product_id: product.id,
       shop_id: product.shop_id,
@@ -71,28 +73,28 @@ export default function ProduitDetailPage({ params }: { params: { id: string } }
       quantity,
       unit_price: product.price,
       total_price: grandTotal,
-      commission_amount: Math.round(grandTotal * 0),
-      seller_amount: grandTotal,
+      commission_amount: commission,
+      seller_amount: sellerAmount,
       buyer_name: profile?.full_name ?? '',
       buyer_phone: profile?.phone ?? '',
+      delivery_price: deliveryTotal,
       status: 'pending',
     }).select().single()
 
     if (error || !order) {
+      console.error('Order error:', error)
       setOrderLoading(false)
       return
     }
 
     // Notification vendeur
-    await supabase.from('notifications').insert({
+    await (supabase as any).from('notifications').insert({
       user_id: product.owner_id,
       title: '🛍️ Nouvelle commande !',
       message: `${profile?.full_name ?? 'Un client'} veut commander "${product.name}" (x${quantity})`,
       type: 'success',
-      link: `/dashboard/vendeur/commandes/${order.id}`,
     })
 
-    // Rediriger vers confirmation avec WhatsApp
     const wp = shop?.whatsapp || shop?.phone || ''
     const msg = encodeURIComponent(
       `Bonjour, je viens de passer une commande sur Zando CI pour "${product.name}" x${quantity}.\n` +
@@ -129,7 +131,7 @@ export default function ProduitDetailPage({ params }: { params: { id: string } }
         .pd-grid { display: grid; grid-template-columns: 1fr; gap: 32px; }
         .pd-thumbs { display: flex; gap: 8px; margin-top: 10px; overflow-x: auto; }
         .pd-thumb { width: 60px; height: 60px; border-radius: 8px; overflow: hidden; cursor: pointer; flex-shrink: 0; border: 2px solid transparent; }
-        .pd-thumb.active { border-color: #22d3a5; }
+        .pd-thumb.active { border-color: #fb923c; }
         @media (min-width: 768px) { .pd-grid { grid-template-columns: 1fr 1fr; } }
       `}</style>
 
@@ -141,7 +143,11 @@ export default function ProduitDetailPage({ params }: { params: { id: string } }
           <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 24, flexWrap: 'wrap' }}>
             <Link href="/boutique" style={{ fontSize: 13, color: 'rgba(255,255,255,0.35)', textDecoration: 'none' }}>Boutique</Link>
             <span style={{ color: 'rgba(255,255,255,0.2)', fontSize: 13 }}>→</span>
-            {shop && <Link href={`/boutique/${product.shop_id}`} style={{ fontSize: 13, color: 'rgba(255,255,255,0.35)', textDecoration: 'none' }}>{shop.name}</Link>}
+            {shop && (
+              <Link href={`/shops/${product.shop_id}`} style={{ fontSize: 13, color: 'rgba(255,255,255,0.35)', textDecoration: 'none' }}>
+                {shop.name}
+              </Link>
+            )}
             <span style={{ color: 'rgba(255,255,255,0.2)', fontSize: 13 }}>→</span>
             <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)' }}>{product.name}</span>
           </div>
@@ -172,9 +178,12 @@ export default function ProduitDetailPage({ params }: { params: { id: string } }
             <div>
               {/* Boutique */}
               {shop && (
-                <Link href={`/boutique/${product.shop_id}`} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20, textDecoration: 'none' }}>
+                <Link href={`/shops/${product.shop_id}`} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20, textDecoration: 'none' }}>
                   <div style={{ width: 36, height: 36, borderRadius: 10, overflow: 'hidden', background: '#1a2236', flexShrink: 0 }}>
-                    {shop.logo_url ? <img src={shop.logo_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}>🏪</div>}
+                    {shop.logo_url
+                      ? <img src={shop.logo_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}>🏪</div>
+                    }
                   </div>
                   <div>
                     <p style={{ fontSize: 13, fontWeight: 600, color: '#fff' }}>{shop.name}</p>
@@ -184,10 +193,10 @@ export default function ProduitDetailPage({ params }: { params: { id: string } }
               )}
 
               <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
-                <span style={{ fontSize: 10, fontWeight: 700, padding: '3px 10px', borderRadius: 20, background: isService ? 'rgba(167,139,250,0.15)' : 'rgba(34,211,165,0.1)', color: isService ? '#a78bfa' : '#22d3a5' }}>
+                <span style={{ fontSize: 10, fontWeight: 700, padding: '3px 10px', borderRadius: 20, background: isService ? 'rgba(167,139,250,0.15)' : 'rgba(251,146,60,0.1)', color: isService ? '#a78bfa' : '#fb923c' }}>
                   {isService ? '⚙️ SERVICE' : '📦 PRODUIT'}
                 </span>
-                <span style={{ fontSize: 10, padding: '3px 10px', borderRadius: 20, background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.4)' }}>
+                <span style={{ fontSize: 10, padding: '3px 10px', borderRadius: 20, background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.4)', textTransform: 'capitalize' }}>
                   {product.category}
                 </span>
               </div>
@@ -195,7 +204,7 @@ export default function ProduitDetailPage({ params }: { params: { id: string } }
               <h1 style={{ fontSize: 24, fontWeight: 800, color: '#fff', letterSpacing: -0.5, marginBottom: 8 }}>{product.name}</h1>
 
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 16 }}>
-                <span style={{ fontSize: 28, fontWeight: 800, color: '#22d3a5' }}>{formatPrice(product.price)}</span>
+                <span style={{ fontSize: 28, fontWeight: 800, color: '#fb923c' }}>{formatPrice(product.price)}</span>
                 {product.compare_price && product.compare_price > product.price && (
                   <span style={{ fontSize: 16, color: 'rgba(255,255,255,0.25)', textDecoration: 'line-through' }}>{formatPrice(product.compare_price)}</span>
                 )}
@@ -231,11 +240,6 @@ export default function ProduitDetailPage({ params }: { params: { id: string } }
                       </div>
                     )}
                   </div>
-                  {product.delivery_info && (
-                    <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', marginTop: 10, borderTop: '0.5px solid rgba(255,255,255,0.05)', paddingTop: 10 }}>
-                      {product.delivery_info}
-                    </p>
-                  )}
                 </div>
               )}
 
@@ -250,12 +254,12 @@ export default function ProduitDetailPage({ params }: { params: { id: string } }
               {!isService && !isOutOfStock && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
                   <label style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: 1 }}>Quantité</label>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 0, background: '#111827', borderRadius: 10, border: '0.5px solid rgba(255,255,255,0.1)', overflow: 'hidden' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', background: '#111827', borderRadius: 10, border: '0.5px solid rgba(255,255,255,0.1)', overflow: 'hidden' }}>
                     <button onClick={() => setQuantity(q => Math.max(1, q - 1))} style={{ width: 36, height: 36, background: 'none', border: 'none', color: '#fff', fontSize: 18, cursor: 'pointer' }}>−</button>
                     <span style={{ width: 36, textAlign: 'center', fontSize: 14, fontWeight: 600, color: '#fff' }}>{quantity}</span>
                     <button onClick={() => setQuantity(q => product.stock ? Math.min(product.stock, q + 1) : q + 1)} style={{ width: 36, height: 36, background: 'none', border: 'none', color: '#fff', fontSize: 18, cursor: 'pointer' }}>+</button>
                   </div>
-                  <span style={{ fontSize: 14, fontWeight: 700, color: '#22d3a5' }}>{formatPrice(product.price * quantity)}</span>
+                  <span style={{ fontSize: 14, fontWeight: 700, color: '#fb923c' }}>{formatPrice(product.price * quantity)}</span>
                 </div>
               )}
 
@@ -267,8 +271,9 @@ export default function ProduitDetailPage({ params }: { params: { id: string } }
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                   <button onClick={handleOrder} disabled={orderLoading} style={{
-                    width: '100%', padding: '15px', background: orderLoading ? 'rgba(34,211,165,0.4)' : '#22d3a5',
-                    color: '#0a1a14', borderRadius: 12, border: 'none', fontSize: 15, fontWeight: 800,
+                    width: '100%', padding: '15px',
+                    background: orderLoading ? 'rgba(251,146,60,0.4)' : '#fb923c',
+                    color: '#fff', borderRadius: 12, border: 'none', fontSize: 15, fontWeight: 800,
                     cursor: orderLoading ? 'not-allowed' : 'pointer',
                   }}>
                     {orderLoading ? 'Traitement...' : isService ? 'Contacter le prestataire' : `Commander — ${formatPrice(product.price * quantity)}`}
@@ -276,7 +281,7 @@ export default function ProduitDetailPage({ params }: { params: { id: string } }
 
                   {(shop?.whatsapp || shop?.phone) && (
                     <a
-                      href={`https://wa.me/${formatPhone(shop.whatsapp || shop.phone)}?text=${encodeURIComponent(`Bonjour, je suis intéressé par "${product.name}" sur Zando CI. Pouvez-vous me donner plus d'informations ?`)}`}
+                      href={`https://wa.me/${formatPhone(shop.whatsapp || shop.phone)}?text=${encodeURIComponent(`Bonjour, je suis intéressé par "${product.name}" sur Zando CI.`)}`}
                       target="_blank" rel="noopener noreferrer"
                       style={{
                         display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
