@@ -236,6 +236,155 @@ export type Database = {
         }
         Relationships: []
       }
+      order_items: {
+        Row: {
+          created_at: string | null
+          id: string
+          order_id: string | null
+          product_id: string | null
+          product_name: string | null
+          product_photo: string | null
+          quantity: number | null
+          total_price: number | null
+          unit_price: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          order_id?: string | null
+          product_id?: string | null
+          product_name?: string | null
+          product_photo?: string | null
+          quantity?: number | null
+          total_price?: number | null
+          unit_price?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          order_id?: string | null
+          product_id?: string | null
+          product_name?: string | null
+          product_photo?: string | null
+          quantity?: number | null
+          total_price?: number | null
+          unit_price?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      orders: {
+        Row: {
+          buyer_id: string | null
+          buyer_name: string | null
+          buyer_phone: string | null
+          commission_amount: number
+          created_at: string | null
+          delivery_address: string | null
+          delivery_city: string | null
+          delivery_price: number | null
+          delivery_type: string | null
+          id: string
+          notes: string | null
+          product_id: string | null
+          quantity: number | null
+          reference: string
+          seller_amount: number
+          seller_id: string | null
+          shop_id: string | null
+          status: string | null
+          total_price: number
+          unit_price: number
+        }
+        Insert: {
+          buyer_id?: string | null
+          buyer_name?: string | null
+          buyer_phone?: string | null
+          commission_amount: number
+          created_at?: string | null
+          delivery_address?: string | null
+          delivery_city?: string | null
+          delivery_price?: number | null
+          delivery_type?: string | null
+          id?: string
+          notes?: string | null
+          product_id?: string | null
+          quantity?: number | null
+          reference: string
+          seller_amount: number
+          seller_id?: string | null
+          shop_id?: string | null
+          status?: string | null
+          total_price: number
+          unit_price: number
+        }
+        Update: {
+          buyer_id?: string | null
+          buyer_name?: string | null
+          buyer_phone?: string | null
+          commission_amount?: number
+          created_at?: string | null
+          delivery_address?: string | null
+          delivery_city?: string | null
+          delivery_price?: number | null
+          delivery_type?: string | null
+          id?: string
+          notes?: string | null
+          product_id?: string | null
+          quantity?: number | null
+          reference?: string
+          seller_amount?: number
+          seller_id?: string | null
+          shop_id?: string | null
+          status?: string | null
+          total_price?: number
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_buyer_id_fkey"
+            columns: ["buyer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_seller_id_fkey"
+            columns: ["seller_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payment_webhooks: {
         Row: {
           created_at: string
@@ -326,6 +475,93 @@ export type Database = {
             isOneToOne: true
             referencedRelation: "owner_earnings"
             referencedColumns: ["booking_id"]
+          },
+        ]
+      }
+      products: {
+        Row: {
+          available: boolean | null
+          category: string
+          city: string
+          compare_price: number | null
+          created_at: string | null
+          delivery_available: boolean | null
+          delivery_price: number | null
+          description: string | null
+          id: string
+          main_photo: string | null
+          name: string
+          owner_id: string | null
+          photos: string[] | null
+          pickup_available: boolean | null
+          price: number
+          shop_id: string | null
+          status: string | null
+          stock: number | null
+          type: string | null
+          unit: string | null
+          views: number | null
+        }
+        Insert: {
+          available?: boolean | null
+          category: string
+          city: string
+          compare_price?: number | null
+          created_at?: string | null
+          delivery_available?: boolean | null
+          delivery_price?: number | null
+          description?: string | null
+          id?: string
+          main_photo?: string | null
+          name: string
+          owner_id?: string | null
+          photos?: string[] | null
+          pickup_available?: boolean | null
+          price: number
+          shop_id?: string | null
+          status?: string | null
+          stock?: number | null
+          type?: string | null
+          unit?: string | null
+          views?: number | null
+        }
+        Update: {
+          available?: boolean | null
+          category?: string
+          city?: string
+          compare_price?: number | null
+          created_at?: string | null
+          delivery_available?: boolean | null
+          delivery_price?: number | null
+          description?: string | null
+          id?: string
+          main_photo?: string | null
+          name?: string
+          owner_id?: string | null
+          photos?: string[] | null
+          pickup_available?: boolean | null
+          price?: number
+          shop_id?: string | null
+          status?: string | null
+          stock?: number | null
+          type?: string | null
+          unit?: string | null
+          views?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "products_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "products_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -453,6 +689,71 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "residences_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shops: {
+        Row: {
+          address: string | null
+          category: string
+          city: string
+          cover_url: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          is_verified: boolean | null
+          logo_url: string | null
+          name: string
+          owner_id: string | null
+          phone: string | null
+          rating: number | null
+          status: string | null
+          total_sales: number | null
+          whatsapp: string | null
+        }
+        Insert: {
+          address?: string | null
+          category: string
+          city: string
+          cover_url?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_verified?: boolean | null
+          logo_url?: string | null
+          name: string
+          owner_id?: string | null
+          phone?: string | null
+          rating?: number | null
+          status?: string | null
+          total_sales?: number | null
+          whatsapp?: string | null
+        }
+        Update: {
+          address?: string | null
+          category?: string
+          city?: string
+          cover_url?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_verified?: boolean | null
+          logo_url?: string | null
+          name?: string
+          owner_id?: string | null
+          phone?: string | null
+          rating?: number | null
+          status?: string | null
+          total_sales?: number | null
+          whatsapp?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shops_owner_id_fkey"
             columns: ["owner_id"]
             isOneToOne: false
             referencedRelation: "profiles"
