@@ -14,6 +14,12 @@ const PUBLIC_ROUTES = [
 const AUTH_ONLY_ROUTES = ['/login', '/register']
 
 export async function middleware(request: NextRequest) {
+  // --- Laisser passer les bots (Facebook, Twitter, LinkedIn…) ---
+  const BOT_UA_REGEX = /facebookexternalhit|Facebot|Twitterbot|LinkedInBot|Slackbot|Discordbot|WhatsApp|Googlebot/i
+  if (BOT_UA_REGEX.test(request.headers.get('user-agent') || '')) {
+    return NextResponse.next()
+  }
+
   let supabaseResponse = NextResponse.next({ request })
 
   const supabase = createServerClient(
