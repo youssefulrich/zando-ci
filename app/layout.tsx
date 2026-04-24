@@ -20,7 +20,7 @@ export const metadata: Metadata = {
     siteName: 'ZandoCI',
     images: [
       {
-        url: '/og.png', // 👈 TRÈS IMPORTANT
+        url: '/og-v2.png', // 👈 TRÈS IMPORTANT
         width: 1200,
         height: 630,
       },
