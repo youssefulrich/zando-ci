@@ -6,6 +6,7 @@ const PUBLIC_ROUTES = [
   '/residences',
   '/vehicles',
   '/events',
+  '/boutique',
   '/login',
   '/register',
   '/api/paiement/webhook',
