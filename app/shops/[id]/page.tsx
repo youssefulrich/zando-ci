@@ -26,7 +26,6 @@ export default async function ShopPage({ params }: { params: Promise<{ id: strin
     .order('created_at', { ascending: false })
   const products = productsRaw as any[] ?? []
 
-  // Vérifier si c'est le propriétaire connecté
   const { data: { user } } = await supabase.auth.getUser()
   const isOwner = user?.id === shop.owner_id
 
@@ -34,19 +33,77 @@ export default async function ShopPage({ params }: { params: Promise<{ id: strin
     <>
       <style>{`
         * { box-sizing: border-box; }
-        .sp-wrap { max-width: 1200px; margin: 0 auto; padding: 32px 24px 80px; }
-        .sp-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+
+        .sp-wrap { max-width: 1200px; margin: 0 auto; padding: 24px 16px 80px; }
+        @media (min-width: 640px) { .sp-wrap { padding: 32px 24px 80px; } }
+
+        /* ── Header ── */
+        .sp-header {
+          display: flex;
+          flex-direction: column;
+          gap: 20px;
+          margin-bottom: 28px;
+        }
+
+        /* Logo + nom + ville sur une ligne */
+        .sp-header-identity {
+          display: flex;
+          align-items: flex-start;
+          gap: 14px;
+        }
+
+        .sp-logo {
+          width: 64px; height: 64px;
+          border-radius: 16px;
+          overflow: hidden;
+          background: rgba(251,146,60,0.15);
+          border: 0.5px solid rgba(251,146,60,0.25);
+          display: flex; align-items: center; justify-content: center;
+          font-size: 20px; font-weight: 800; color: #fb923c;
+          flex-shrink: 0;
+        }
+
+        /* Description : clampée à 4 lignes sur mobile */
+        .sp-desc {
+          font-size: 13px;
+          color: rgba(255,255,255,0.5);
+          line-height: 1.65;
+          margin-top: 12px;
+          display: -webkit-box;
+          -webkit-line-clamp: 4;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+        }
+        @media (min-width: 640px) { .sp-desc { -webkit-line-clamp: unset; overflow: visible; } }
+
+        /* Badges actions (WA, Appeler) */
+        .sp-actions {
+          display: flex;
+          gap: 8px;
+          flex-wrap: wrap;
+          align-items: center;
+          margin-top: 12px;
+        }
+
+        /* Boutons owner — pleine largeur sur mobile */
+        .sp-owner-btns {
+          display: flex;
+          gap: 10px;
+          flex-wrap: wrap;
+        }
+        .sp-owner-btns a {
+          flex: 1;
+          text-align: center;
+          min-width: 140px;
+        }
+
+        /* Grille produits */
+        .sp-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+        @media (min-width: 640px)  { .sp-grid { grid-template-columns: repeat(3, 1fr); gap: 14px; } }
+        @media (min-width: 1024px) { .sp-grid { grid-template-columns: repeat(4, 1fr); gap: 16px; } }
+
         .sp-card { background: #111827; border: 0.5px solid rgba(255,255,255,0.07); border-radius: 14px; overflow: hidden; text-decoration: none; display: block; transition: all 0.2s; }
         .sp-card:hover { border-color: rgba(251,146,60,0.35); transform: translateY(-2px); }
-
-        @media (max-width: 767px) {
-          .sp-wrap { padding: 16px 14px 60px; }
-          .sp-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
-          .sp-header-actions { flex-direction: column !important; align-items: flex-start !important; }
-        }
-        @media (min-width: 768px) and (max-width: 1023px) {
-          .sp-grid { grid-template-columns: repeat(3, 1fr); }
-        }
       `}</style>
 
       <div style={{ background: '#0a0f1a', minHeight: '100vh', color: '#e2e8f0' }}>
@@ -54,42 +111,63 @@ export default async function ShopPage({ params }: { params: Promise<{ id: strin
         <div className="sp-wrap">
 
           {/* Retour */}
-          <Link href="/boutique" style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6, marginBottom: 24 }}>
+          <Link href="/boutique" style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6, marginBottom: 20 }}>
             ← Retour à la marketplace
           </Link>
 
-          {/* Header boutique */}
-          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, marginBottom: 32, flexWrap: 'wrap' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-              <div style={{ width: 72, height: 72, borderRadius: 16, overflow: 'hidden', background: 'rgba(251,146,60,0.15)', border: '0.5px solid rgba(251,146,60,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, fontWeight: 800, color: '#fb923c', flexShrink: 0 }}>
+          {/* Header */}
+          <div className="sp-header">
+
+            {/* Identité : logo + nom + ville */}
+            <div className="sp-header-identity">
+              <div className="sp-logo">
                 {shop.logo_url
                   ? <img src={shop.logo_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   : shop.name?.slice(0, 2).toUpperCase()
                 }
               </div>
-              <div>
-                <h1 style={{ fontSize: 24, fontWeight: 800, color: '#fff', letterSpacing: -0.5, marginBottom: 4 }}>{shop.name}</h1>
-                <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', marginBottom: 6 }}>📍 {shop.city}{shop.address ? ` · ${shop.address}` : ''}</p>
-                {shop.description && <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)' }}>{shop.description}</p>}
-                <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap', alignItems: 'center' }}>
-                  <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)' }}>{products.length} produit{products.length > 1 ? 's' : ''}</span>
-                  {shop.whatsapp && (
-                    <a href={`https://wa.me/${shop.whatsapp.replace(/[^0-9]/g, '')}`} target="_blank" style={{ padding: '6px 14px', background: 'rgba(37,211,102,0.15)', border: '0.5px solid rgba(37,211,102,0.3)', borderRadius: 20, fontSize: 12, fontWeight: 600, color: '#25d366', textDecoration: 'none' }}>
-                      💬 WhatsApp
-                    </a>
-                  )}
-                  {shop.phone && (
-                    <a href={`tel:${shop.phone}`} style={{ padding: '6px 14px', background: 'rgba(96,165,250,0.1)', border: '0.5px solid rgba(96,165,250,0.2)', borderRadius: 20, fontSize: 12, fontWeight: 600, color: '#60a5fa', textDecoration: 'none' }}>
-                      📞 Appeler
-                    </a>
-                  )}
-                </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <h1 style={{ fontSize: 22, fontWeight: 800, color: '#fff', letterSpacing: -0.5, marginBottom: 4, lineHeight: 1.2 }}>
+                  {shop.name}
+                </h1>
+                <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)' }}>
+                  📍 {shop.city}{shop.address ? ` · ${shop.address}` : ''}
+                </p>
               </div>
             </div>
 
-            {/* ✅ Boutons propriétaire */}
+            {/* Description clampée */}
+            {shop.description && (
+              <p className="sp-desc">{shop.description}</p>
+            )}
+
+            {/* Actions contact + stats */}
+            <div className="sp-actions">
+              <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)' }}>
+                {products.length} produit{products.length > 1 ? 's' : ''}
+              </span>
+              {shop.whatsapp && (
+                <a
+                  href={`https://wa.me/${shop.whatsapp.replace(/[^0-9]/g, '')}`}
+                  target="_blank"
+                  style={{ padding: '6px 14px', background: 'rgba(37,211,102,0.15)', border: '0.5px solid rgba(37,211,102,0.3)', borderRadius: 20, fontSize: 12, fontWeight: 600, color: '#25d366', textDecoration: 'none' }}
+                >
+                  💬 WhatsApp
+                </a>
+              )}
+              {shop.phone && (
+                <a
+                  href={`tel:${shop.phone}`}
+                  style={{ padding: '6px 14px', background: 'rgba(96,165,250,0.1)', border: '0.5px solid rgba(96,165,250,0.2)', borderRadius: 20, fontSize: 12, fontWeight: 600, color: '#60a5fa', textDecoration: 'none' }}
+                >
+                  📞 Appeler
+                </a>
+              )}
+            </div>
+
+            {/* Boutons propriétaire */}
             {isOwner && (
-              <div className="sp-header-actions" style={{ display: 'flex', gap: 10, alignItems: 'center', flexShrink: 0 }}>
+              <div className="sp-owner-btns">
                 <Link href="/publier/produit" style={{ padding: '11px 20px', background: '#fb923c', color: '#fff', borderRadius: 12, fontSize: 13, fontWeight: 700, textDecoration: 'none', whiteSpace: 'nowrap' }}>
                   + Ajouter un produit
                 </Link>
@@ -102,12 +180,12 @@ export default async function ShopPage({ params }: { params: Promise<{ id: strin
 
           {/* Bannière propriétaire */}
           {isOwner && (
-            <div style={{ background: 'rgba(251,146,60,0.06)', border: '0.5px solid rgba(251,146,60,0.2)', borderRadius: 14, padding: '14px 20px', marginBottom: 24, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
-              <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)' }}>
-                🏪 <strong style={{ color: '#fb923c' }}>Votre boutique</strong> — Vous êtes le propriétaire. Gérez vos produits depuis ici ou depuis votre dashboard.
+            <div style={{ background: 'rgba(251,146,60,0.06)', border: '0.5px solid rgba(251,146,60,0.2)', borderRadius: 14, padding: '14px 16px', marginBottom: 24, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+              <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)', flex: 1, minWidth: 0 }}>
+                🏪 <strong style={{ color: '#fb923c' }}>Votre boutique</strong> — Gérez vos produits depuis ici ou depuis votre dashboard.
               </p>
-              <Link href="/publier/produit" style={{ fontSize: 13, color: '#fb923c', textDecoration: 'none', padding: '8px 16px', borderRadius: 10, border: '0.5px solid rgba(251,146,60,0.25)', background: 'rgba(251,146,60,0.08)', fontWeight: 600, whiteSpace: 'nowrap' }}>
-                + Ajouter un produit →
+              <Link href="/publier/produit" style={{ fontSize: 13, color: '#fb923c', textDecoration: 'none', padding: '8px 16px', borderRadius: 10, border: '0.5px solid rgba(251,146,60,0.25)', background: 'rgba(251,146,60,0.08)', fontWeight: 600, whiteSpace: 'nowrap', flexShrink: 0 }}>
+                + Ajouter →
               </Link>
             </div>
           )}
@@ -161,6 +239,7 @@ export default async function ShopPage({ params }: { params: Promise<{ id: strin
               )}
             </div>
           )}
+
         </div>
       </div>
     </>
