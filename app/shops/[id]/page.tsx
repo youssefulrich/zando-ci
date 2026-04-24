@@ -152,7 +152,7 @@ export default async function ShopPage({ params }: { params: Promise<{ id: strin
                   + Ajouter un produit
                 </Link>
 
-                <Link href="/modifier-boutique" style={{
+                <Link href="/modifier/boutique" style={{
                   padding: '11px 20px',
                   background: 'rgba(96,165,250,0.1)',
                   border: '0.5px solid rgba(96,165,250,0.3)',
