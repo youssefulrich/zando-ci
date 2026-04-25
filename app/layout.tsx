@@ -13,21 +13,21 @@ export const metadata: Metadata = {
     icon: '/favicon.png',
   },
 
-  openGraph: {
-    title: 'Zando CI',
-    description: 'Location de résidences, véhicules, événements et boutiques',
-    url: 'https://ton-domaine.vercel.app',
-    siteName: 'ZandoCI',
-    images: [
-      {
-        url: '/og-v2.png', // 👈 TRÈS IMPORTANT
-        width: 1200,
-        height: 630,
-      },
-    ],
-    locale: 'fr_FR',
-    type: 'website',
-  },
+openGraph: {
+  title: 'Zando CI',
+  description: 'Location de résidences, véhicules, événements et boutiques',
+  url: 'https://zando-ci.vercel.app',
+  siteName: 'ZandoCI',
+  images: [
+    {
+      url: 'https://zando-ci.vercel.app/og-v2.png',
+      width: 1200,
+      height: 630,
+    },
+  ],
+  locale: 'fr_FR',
+  type: 'website',
+},
 }
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
