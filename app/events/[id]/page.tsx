@@ -1,12 +1,37 @@
-// =============================================
-// EVENT DETAIL PAGE — events/[id]/page.tsx
-// =============================================
-
+import type { Metadata } from 'next'
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import Navbar from '@/components/layout/Navbar'
 import BookingFormEvent from '@/components/booking/BookingFormEvent'
 import { formatPrice, formatDate } from '@/lib/utils'
+
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const { id } = await params
+  const supabase = await createClient()
+
+  const { data: e } = await supabase
+    .from('events')
+    .select('title, description, main_photo, venue_name, event_date, price_per_ticket')
+    .eq('id', id)
+    .single()
+
+  if (!e) return {}
+
+  const desc = e.description
+    ? e.description.slice(0, 150)
+    : `${e.venue_name} · ${formatDate(e.event_date)}`
+
+  return {
+    title: `${e.title} | Zando CI`,
+    description: desc,
+    openGraph: {
+      title: e.title,
+      description: `${e.venue_name} · ${formatDate(e.event_date)} — ${e.price_per_ticket === 0 ? 'Gratuit' : formatPrice(e.price_per_ticket) + ' FCFA'}`,
+      images: e.main_photo ? [{ url: e.main_photo, width: 1200, height: 630 }] : [],
+      type: 'website',
+    },
+  }
+}
 
 export default async function EventDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -65,7 +90,6 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
       <div style={{ background: '#0a0f1a', minHeight: '100vh' }}>
         <Navbar />
 
-        {/* Hero image */}
         {event.main_photo && (
           <div className="ed-hero">
             <img src={event.main_photo} alt={event.title} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
@@ -87,7 +111,6 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
 
         <div className="ed-content">
 
-          {/* Header si pas de photo */}
           {!event.main_photo && (
             <div style={{ marginBottom: 40 }}>
               <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
@@ -101,10 +124,8 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
 
           <div className="ed-grid">
 
-            {/* Colonne gauche */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
 
-              {/* Infos clés */}
               <div className="ed-infos">
                 {[
                   { label: 'Date', value: formatDate(event.event_date) },
@@ -119,7 +140,6 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
                 ))}
               </div>
 
-              {/* Description */}
               {event.description && (
                 <div style={{ background: '#111827', border: '0.5px solid rgba(255,255,255,0.08)', borderRadius: 16, padding: '24px' }}>
                   <h2 style={{ fontSize: 15, fontWeight: 700, color: '#fff', marginBottom: 14 }}>À propos</h2>
@@ -127,7 +147,6 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
                 </div>
               )}
 
-              {/* Organisateur */}
               <div style={{ background: '#111827', border: '0.5px solid rgba(255,255,255,0.08)', borderRadius: 16, padding: '24px' }}>
                 <h2 style={{ fontSize: 15, fontWeight: 700, color: '#fff', marginBottom: 16 }}>Organisé par</h2>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
@@ -142,10 +161,8 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
               </div>
             </div>
 
-            {/* Réservation */}
             <div className="ed-booking">
               <div style={{ background: '#111827', border: '0.5px solid rgba(167,139,250,0.2)', borderRadius: 20, padding: 28, overflow: 'hidden' }}>
-                {/* Prix */}
                 <div style={{ marginBottom: 20 }}>
                   <p style={{ fontSize: 32, fontWeight: 800, color: '#fff', letterSpacing: -1 }}>
                     {event.price_per_ticket === 0 ? 'Gratuit' : formatPrice(event.price_per_ticket)}
@@ -153,7 +170,6 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
                   {event.price_per_ticket > 0 && <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.35)', marginTop: 2 }}>par billet</p>}
                 </div>
 
-                {/* Stock */}
                 <div style={{ marginBottom: 24 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
                     <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>{remaining} / {event.total_capacity} billets restants</span>

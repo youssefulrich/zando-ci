@@ -1,9 +1,37 @@
+import type { Metadata } from 'next'
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import Navbar from '@/components/layout/Navbar'
 import BookingFormResidence from '@/components/booking/BookingFormResidence'
 import PhotoGallery from '@/components/ui/PhotoGallery'
 import { formatPrice } from '@/lib/utils'
+
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const { id } = await params
+  const supabase = await createClient()
+
+  const { data: r } = await supabase
+    .from('residences')
+    .select('title, description, main_photo, photos, city, price_per_night')
+    .eq('id', id)
+    .single()
+
+  if (!r) return {}
+
+  const photos: string[] = Array.isArray(r.photos) ? r.photos : []
+  const image = r.main_photo ?? photos[0] ?? null
+
+  return {
+    title: `${r.title} — ${formatPrice(r.price_per_night)}/nuit | Zando CI`,
+    description: r.description ?? `Résidence à ${r.city} disponible sur Zando CI`,
+    openGraph: {
+      title: `${r.title} | ${r.city}`,
+      description: r.description ?? `À partir de ${formatPrice(r.price_per_night)} / nuit`,
+      images: image ? [{ url: image, width: 1200, height: 630 }] : [],
+      type: 'website',
+    },
+  }
+}
 
 export default async function ResidenceDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -31,11 +59,6 @@ export default async function ResidenceDetailPage({ params }: { params: Promise<
     gardien: '💂', générateur: '⚡', eau_chaude: '🚿', balcon: '🌿',
   }
 
-  const TYPE_LABELS: Record<string, string> = {
-    apartment: 'Appartement', villa: 'Villa', studio: 'Studio',
-    house: 'Maison', room: 'Chambre',
-  }
-
   return (
     <>
       <style>{`
@@ -60,29 +83,20 @@ export default async function ResidenceDetailPage({ params }: { params: Promise<
       <Navbar />
 
       <div style={{ background: '#0a0f1a', minHeight: '100vh', color: '#e2e8f0' }}>
-        
-        {/* Photo Gallery */}
+
         {photos.length > 0 && (
-          <PhotoGallery
-            photos={photos}
-            title={residence.title}
-            accent="#22d3a5"
-          />
+          <PhotoGallery photos={photos} title={residence.title} accent="#22d3a5" />
         )}
 
-        {/* Content */}
         <div className="rd-content">
           <div className="rd-grid">
 
-            {/* Left */}
             <div>
-              {/* Title */}
               <div style={{ marginBottom: 32, paddingTop: 16 }}>
                 <h1 style={{ fontSize: 32, fontWeight: 700, color: '#f1f5f9', lineHeight: 1.2, marginBottom: 8 }}>{residence.title}</h1>
                 <p style={{ color: '#64748b', fontSize: 14 }}>{residence.address && `${residence.address}, `}{residence.city}</p>
               </div>
 
-              {/* Stats */}
               <div className="rd-stats">
                 {[
                   { icon: '🛏️', value: `${residence.bedrooms}`, label: 'Chambres' },
@@ -98,7 +112,6 @@ export default async function ResidenceDetailPage({ params }: { params: Promise<
                 ))}
               </div>
 
-              {/* Description */}
               {residence.description && (
                 <div style={{ marginBottom: 32 }}>
                   <h2 style={{ fontSize: 11, fontWeight: 600, color: '#cbd5e1', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Description</h2>
@@ -106,7 +119,6 @@ export default async function ResidenceDetailPage({ params }: { params: Promise<
                 </div>
               )}
 
-              {/* Amenities */}
               {amenities.length > 0 && (
                 <div style={{ marginBottom: 32 }}>
                   <h2 style={{ fontSize: 11, fontWeight: 600, color: '#cbd5e1', marginBottom: 16, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Équipements</h2>
@@ -120,7 +132,6 @@ export default async function ResidenceDetailPage({ params }: { params: Promise<
                 </div>
               )}
 
-              {/* Price */}
               <div style={{ marginBottom: 32 }}>
                 <h2 style={{ fontSize: 11, fontWeight: 600, color: '#cbd5e1', marginBottom: 16, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Tarifs</h2>
                 <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 16, overflow: 'hidden' }}>
@@ -131,7 +142,6 @@ export default async function ResidenceDetailPage({ params }: { params: Promise<
                 </div>
               </div>
 
-              {/* Host */}
               <div>
                 <h2 style={{ fontSize: 11, fontWeight: 600, color: '#cbd5e1', marginBottom: 16, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Propriétaire</h2>
                 <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 16, padding: '20px', display: 'flex', alignItems: 'center', gap: 16 }}>
@@ -146,7 +156,6 @@ export default async function ResidenceDetailPage({ params }: { params: Promise<
               </div>
             </div>
 
-            {/* Booking */}
             <div className="rd-booking">
               <BookingFormResidence
                 residenceId={residence.id}
