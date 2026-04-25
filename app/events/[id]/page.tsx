@@ -8,7 +8,6 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
   const { id } = await params
   const supabase = await createClient()
 
-  // ✅ VERSION CORRIGÉE : on sélectionne explicitement organizer_id
   const { data: event } = await supabase
     .from('events')
     .select(`
@@ -49,14 +48,8 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
   const accent = '#a78bfa'
 
   const profiles = event.profiles as any
-
-  // Prend le meilleur numéro dispo
-  const organizerPhone =
-    profiles?.phone ||
-    profiles?.orange_money ||
-    profiles?.wave ||
-    profiles?.mtn_money ||
-    null
+  // Récupère le premier numéro disponible comme WhatsApp
+  const organizerPhone = profiles?.phone || profiles?.orange_money || profiles?.wave || profiles?.mtn_money || null
 
   return (
     <>
@@ -91,95 +84,42 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
       <div style={{ background: '#0a0f1a', minHeight: '100vh' }}>
         <Navbar />
 
-        {/* HERO IMAGE */}
+        {/* Hero */}
         {event.main_photo && (
           <div className="ed-hero">
-            <img
-              src={event.main_photo}
-              alt={event.title}
-              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-            />
-            <div
-              style={{
-                position: 'absolute',
-                inset: 0,
-                background: 'linear-gradient(to bottom, rgba(10,15,26,0.2) 0%, rgba(10,15,26,0.95) 100%)'
-              }}
-            />
+            <img src={event.main_photo} alt={event.title} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+            <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(10,15,26,0.2) 0%, rgba(10,15,26,0.95) 100%)' }} />
 
             <div className="ed-hero-badges">
-              <span style={{
-                background: 'rgba(167,139,250,0.2)',
-                color: accent,
-                border: '0.5px solid rgba(167,139,250,0.3)',
-                fontSize: 11,
-                fontWeight: 600,
-                padding: '5px 14px',
-                borderRadius: 20,
-                textTransform: 'capitalize'
-              }}>{event.category}</span>
-
-              {isSoldOut && (
-                <span style={{
-                  background: 'rgba(248,113,113,0.2)',
-                  color: '#f87171',
-                  border: '0.5px solid rgba(248,113,113,0.3)',
-                  fontSize: 11,
-                  fontWeight: 600,
-                  padding: '5px 14px',
-                  borderRadius: 20
-                }}>Complet</span>
-              )}
-
-              {isPast && (
-                <span style={{
-                  background: 'rgba(255,255,255,0.1)',
-                  color: 'rgba(255,255,255,0.5)',
-                  border: '0.5px solid rgba(255,255,255,0.15)',
-                  fontSize: 11,
-                  fontWeight: 600,
-                  padding: '5px 14px',
-                  borderRadius: 20
-                }}>Terminé</span>
-              )}
-
-              {!isSoldOut && !isPast && (
-                <span style={{
-                  background: 'rgba(34,211,165,0.15)',
-                  color: '#22d3a5',
-                  border: '0.5px solid rgba(34,211,165,0.25)',
-                  fontSize: 11,
-                  fontWeight: 600,
-                  padding: '5px 14px',
-                  borderRadius: 20
-                }}>
-                  {remaining} billet{remaining > 1 ? 's' : ''} disponible{remaining > 1 ? 's' : ''}
-                </span>
-              )}
+              <span style={{ background: 'rgba(167,139,250,0.2)', color: accent, border: '0.5px solid rgba(167,139,250,0.3)', fontSize: 11, fontWeight: 600, padding: '5px 14px', borderRadius: 20, textTransform: 'capitalize' }}>{event.category}</span>
+              {isSoldOut && <span style={{ background: 'rgba(248,113,113,0.2)', color: '#f87171', border: '0.5px solid rgba(248,113,113,0.3)', fontSize: 11, fontWeight: 600, padding: '5px 14px', borderRadius: 20 }}>Complet</span>}
+              {isPast && <span style={{ background: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.5)', border: '0.5px solid rgba(255,255,255,0.15)', fontSize: 11, fontWeight: 600, padding: '5px 14px', borderRadius: 20 }}>Terminé</span>}
+              {!isSoldOut && !isPast && <span style={{ background: 'rgba(34,211,165,0.15)', color: '#22d3a5', border: '0.5px solid rgba(34,211,165,0.25)', fontSize: 11, fontWeight: 600, padding: '5px 14px', borderRadius: 20 }}>{remaining} billet{remaining > 1 ? 's' : ''} disponible{remaining > 1 ? 's' : ''}</span>}
             </div>
 
             <div className="ed-hero-bottom">
-              <h1 style={{
-                fontSize: 42,
-                fontWeight: 800,
-                color: '#fff',
-                letterSpacing: -1.5,
-                lineHeight: 1.1,
-                textShadow: '0 2px 20px rgba(0,0,0,0.5)',
-                margin: 0
-              }}>{event.title}</h1>
-
-              <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.55)', marginTop: 10 }}>
-                {event.venue_name} · {formatDate(event.event_date)}
-              </p>
+              <h1 style={{ fontSize: 42, fontWeight: 800, color: '#fff', letterSpacing: -1.5, lineHeight: 1.1, textShadow: '0 2px 20px rgba(0,0,0,0.5)', margin: 0 }}>{event.title}</h1>
+              <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.55)', marginTop: 10 }}>{event.venue_name} · {formatDate(event.event_date)}</p>
             </div>
           </div>
         )}
 
         <div className="ed-content">
+
+          {!event.main_photo && (
+            <div style={{ marginBottom: 40 }}>
+              <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
+                <span style={{ background: 'rgba(167,139,250,0.15)', color: accent, border: '0.5px solid rgba(167,139,250,0.25)', fontSize: 11, fontWeight: 600, padding: '4px 12px', borderRadius: 20, textTransform: 'capitalize' }}>{event.category}</span>
+                {!isSoldOut && !isPast && <span style={{ background: 'rgba(34,211,165,0.1)', color: '#22d3a5', border: '0.5px solid rgba(34,211,165,0.2)', fontSize: 11, fontWeight: 600, padding: '4px 12px', borderRadius: 20 }}>{remaining} billets disponibles</span>}
+              </div>
+              <h1 style={{ fontSize: 36, fontWeight: 800, color: '#fff', letterSpacing: -1, marginBottom: 8 }}>{event.title}</h1>
+              <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.4)' }}>{event.venue_name}</p>
+            </div>
+          )}
+
           <div className="ed-grid">
 
-            {/* LEFT SIDE */}
+            {/* Gauche */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
 
               <div className="ed-infos">
@@ -189,117 +129,38 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
                   { label: 'Lieu', value: event.venue_name },
                   { label: 'Adresse', value: event.venue_address },
                 ].map(info => (
-                  <div key={info.label} style={{
-                    background: '#111827',
-                    border: '0.5px solid rgba(255,255,255,0.08)',
-                    borderRadius: 12,
-                    padding: '16px 20px'
-                  }}>
-                    <p style={{
-                      fontSize: 11,
-                      color: 'rgba(255,255,255,0.35)',
-                      textTransform: 'uppercase',
-                      letterSpacing: 1,
-                      marginBottom: 6
-                    }}>{info.label}</p>
-
+                  <div key={info.label} style={{ background: '#111827', border: '0.5px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: '16px 20px' }}>
+                    <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>{info.label}</p>
                     <p style={{ fontSize: 14, fontWeight: 600, color: '#fff' }}>{info.value}</p>
                   </div>
                 ))}
               </div>
 
               {event.description && (
-                <div style={{
-                  background: '#111827',
-                  border: '0.5px solid rgba(255,255,255,0.08)',
-                  borderRadius: 16,
-                  padding: 24
-                }}>
-                  <h2 style={{ fontSize: 15, fontWeight: 700, color: '#fff', marginBottom: 14 }}>
-                    À propos
-                  </h2>
-                  <p style={{
-                    fontSize: 14,
-                    color: 'rgba(255,255,255,0.55)',
-                    lineHeight: 1.8,
-                    whiteSpace: 'pre-line'
-                  }}>{event.description}</p>
+                <div style={{ background: '#111827', border: '0.5px solid rgba(255,255,255,0.08)', borderRadius: 16, padding: 24 }}>
+                  <h2 style={{ fontSize: 15, fontWeight: 700, color: '#fff', marginBottom: 14 }}>À propos</h2>
+                  <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.55)', lineHeight: 1.8, whiteSpace: 'pre-line' }}>{event.description}</p>
                 </div>
               )}
 
-              {/* ORGANISER CARD */}
-              <div style={{
-                background: '#111827',
-                border: '0.5px solid rgba(255,255,255,0.08)',
-                borderRadius: 16,
-                padding: 24
-              }}>
-                <h2 style={{ fontSize: 15, fontWeight: 700, color: '#fff', marginBottom: 16 }}>
-                  Organisé par
-                </h2>
-
+              {/* Organisateur */}
+              <div style={{ background: '#111827', border: '0.5px solid rgba(255,255,255,0.08)', borderRadius: 16, padding: 24 }}>
+                <h2 style={{ fontSize: 15, fontWeight: 700, color: '#fff', marginBottom: 16 }}>Organisé par</h2>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: organizerPhone ? 16 : 0 }}>
-                  <div style={{
-                    width: 44,
-                    height: 44,
-                    borderRadius: '50%',
-                    background: 'rgba(167,139,250,0.15)',
-                    border: '0.5px solid rgba(167,139,250,0.25)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: 14,
-                    fontWeight: 700,
-                    color: accent,
-                    flexShrink: 0
-                  }}>
+                  <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'rgba(167,139,250,0.15)', border: '0.5px solid rgba(167,139,250,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, color: accent, flexShrink: 0 }}>
                     {profiles?.full_name?.slice(0, 2).toUpperCase()}
                   </div>
-
                   <div>
-                    <p style={{ fontSize: 14, fontWeight: 600, color: '#fff' }}>
-                      {profiles?.full_name}
-                    </p>
-                    <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', marginTop: 2 }}>
-                      Organisateur vérifié
-                    </p>
+                    <p style={{ fontSize: 14, fontWeight: 600, color: '#fff' }}>{profiles?.full_name}</p>
+                    <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', marginTop: 2 }}>Organisateur vérifié</p>
                   </div>
                 </div>
-
                 {organizerPhone && (
                   <div style={{ display: 'flex', gap: 10 }}>
-                    <a
-                      href={`https://wa.me/${organizerPhone.replace(/\D/g, '')}`}
-                      target="_blank"
-                      style={{
-                        flex: 1,
-                        padding: '10px',
-                        background: 'rgba(37,211,102,0.1)',
-                        border: '0.5px solid rgba(37,211,102,0.2)',
-                        borderRadius: 10,
-                        fontSize: 13,
-                        color: '#25d366',
-                        textDecoration: 'none',
-                        textAlign: 'center',
-                        fontWeight: 600
-                      }}>
+                    <a href={`https://wa.me/${organizerPhone.replace(/\D/g, '')}`} target="_blank" style={{ flex: 1, padding: '10px', background: 'rgba(37,211,102,0.1)', border: '0.5px solid rgba(37,211,102,0.2)', borderRadius: 10, fontSize: 13, color: '#25d366', textDecoration: 'none', textAlign: 'center', fontWeight: 600 }}>
                       WhatsApp
                     </a>
-
-                    <a
-                      href={`tel:${organizerPhone}`}
-                      style={{
-                        flex: 1,
-                        padding: '10px',
-                        background: 'rgba(96,165,250,0.1)',
-                        border: '0.5px solid rgba(96,165,250,0.2)',
-                        borderRadius: 10,
-                        fontSize: 13,
-                        color: '#60a5fa',
-                        textDecoration: 'none',
-                        textAlign: 'center',
-                        fontWeight: 600
-                      }}>
+                    <a href={`tel:${organizerPhone}`} style={{ flex: 1, padding: '10px', background: 'rgba(96,165,250,0.1)', border: '0.5px solid rgba(96,165,250,0.2)', borderRadius: 10, fontSize: 13, color: '#60a5fa', textDecoration: 'none', textAlign: 'center', fontWeight: 600 }}>
                       Appeler
                     </a>
                   </div>
@@ -307,63 +168,23 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
               </div>
             </div>
 
-            {/* BOOKING FORM */}
+            {/* Réservation */}
             <div className="ed-booking">
-              <div style={{
-                background: '#111827',
-                border: '0.5px solid rgba(167,139,250,0.2)',
-                borderRadius: 20,
-                padding: 28
-              }}>
+              <div style={{ background: '#111827', border: '0.5px solid rgba(167,139,250,0.2)', borderRadius: 20, padding: 28 }}>
                 <div style={{ marginBottom: 20 }}>
                   <p style={{ fontSize: 32, fontWeight: 800, color: '#fff', letterSpacing: -1 }}>
                     {event.price_per_ticket === 0 ? 'Gratuit' : formatPrice(event.price_per_ticket)}
                   </p>
-
-                  {event.price_per_ticket > 0 && (
-                    <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.35)', marginTop: 2 }}>
-                      par billet
-                    </p>
-                  )}
+                  {event.price_per_ticket > 0 && <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.35)', marginTop: 2 }}>par billet</p>}
                 </div>
 
                 <div style={{ marginBottom: 24 }}>
-                  <div style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    marginBottom: 8
-                  }}>
-                    <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>
-                      {remaining} / {event.total_capacity} billets restants
-                    </span>
-
-                    <span style={{
-                      fontSize: 12,
-                      fontWeight: 600,
-                      color: fillRate >= 90 ? '#f87171' : fillRate >= 60 ? '#fbbf24' : '#22d3a5'
-                    }}>
-                      {fillRate}%
-                    </span>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                    <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>{remaining} / {event.total_capacity} billets restants</span>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: fillRate >= 90 ? '#f87171' : fillRate >= 60 ? '#fbbf24' : '#22d3a5' }}>{fillRate}%</span>
                   </div>
-
-                  <div style={{
-                    height: 6,
-                    background: 'rgba(255,255,255,0.06)',
-                    borderRadius: 3,
-                    overflow: 'hidden'
-                  }}>
-                    <div
-                      style={{
-                        height: '100%',
-                        borderRadius: 3,
-                        background: fillRate >= 90
-                          ? '#f87171'
-                          : fillRate >= 60
-                          ? '#fbbf24'
-                          : accent,
-                        width: `${fillRate}%`
-                      }}
-                    />
+                  <div style={{ height: 6, background: 'rgba(255,255,255,0.06)', borderRadius: 3, overflow: 'hidden' }}>
+                    <div style={{ height: '100%', borderRadius: 3, background: fillRate >= 90 ? '#f87171' : fillRate >= 60 ? '#fbbf24' : accent, width: `${fillRate}%` }} />
                   </div>
                 </div>
 
