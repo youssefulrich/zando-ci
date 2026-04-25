@@ -1,3 +1,7 @@
+// =============================================
+// EVENT DETAIL PAGE — events/[id]/page.tsx
+// =============================================
+
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import Navbar from '@/components/layout/Navbar'
@@ -10,29 +14,7 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
 
   const { data: event } = await supabase
     .from('events')
-    .select(`
-      id,
-      organizer_id,
-      title,
-      category,
-      description,
-      event_date,
-      event_time,
-      venue_name,
-      venue_address,
-      main_photo,
-      total_capacity,
-      tickets_sold,
-      price_per_ticket,
-      status,
-      profiles (
-        full_name,
-        phone,
-        orange_money,
-        wave,
-        mtn_money
-      )
-    `)
+    .select('*, profiles(full_name, phone)')
     .eq('id', id)
     .eq('status', 'active')
     .single()
@@ -45,11 +27,8 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
   const isSoldOut = remaining <= 0
   const isPast = new Date(event.event_date) < new Date()
   const fillRate = Math.min(100, Math.round((event.tickets_sold / event.total_capacity) * 100))
-  const accent = '#a78bfa'
 
-  const profiles = event.profiles as any
-  // Récupère le premier numéro disponible comme WhatsApp
-  const organizerPhone = profiles?.phone || profiles?.orange_money || profiles?.wave || profiles?.mtn_money || null
+  const accent = '#a78bfa'
 
   return (
     <>
@@ -75,6 +54,8 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
         }
 
         @media (min-width: 768px) and (max-width: 1023px) {
+          .ed-hero-badges { left: 24px; }
+          .ed-hero-bottom { left: 24px; right: 24px; }
           .ed-content { padding: 32px 24px; }
           .ed-grid { grid-template-columns: 1fr; }
           .ed-booking { position: static; }
@@ -84,7 +65,7 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
       <div style={{ background: '#0a0f1a', minHeight: '100vh' }}>
         <Navbar />
 
-        {/* Hero */}
+        {/* Hero image */}
         {event.main_photo && (
           <div className="ed-hero">
             <img src={event.main_photo} alt={event.title} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
@@ -106,6 +87,7 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
 
         <div className="ed-content">
 
+          {/* Header si pas de photo */}
           {!event.main_photo && (
             <div style={{ marginBottom: 40 }}>
               <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
@@ -119,9 +101,10 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
 
           <div className="ed-grid">
 
-            {/* Gauche */}
+            {/* Colonne gauche */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
 
+              {/* Infos clés */}
               <div className="ed-infos">
                 {[
                   { label: 'Date', value: formatDate(event.event_date) },
@@ -136,41 +119,33 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
                 ))}
               </div>
 
+              {/* Description */}
               {event.description && (
-                <div style={{ background: '#111827', border: '0.5px solid rgba(255,255,255,0.08)', borderRadius: 16, padding: 24 }}>
+                <div style={{ background: '#111827', border: '0.5px solid rgba(255,255,255,0.08)', borderRadius: 16, padding: '24px' }}>
                   <h2 style={{ fontSize: 15, fontWeight: 700, color: '#fff', marginBottom: 14 }}>À propos</h2>
                   <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.55)', lineHeight: 1.8, whiteSpace: 'pre-line' }}>{event.description}</p>
                 </div>
               )}
 
               {/* Organisateur */}
-              <div style={{ background: '#111827', border: '0.5px solid rgba(255,255,255,0.08)', borderRadius: 16, padding: 24 }}>
+              <div style={{ background: '#111827', border: '0.5px solid rgba(255,255,255,0.08)', borderRadius: 16, padding: '24px' }}>
                 <h2 style={{ fontSize: 15, fontWeight: 700, color: '#fff', marginBottom: 16 }}>Organisé par</h2>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: organizerPhone ? 16 : 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
                   <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'rgba(167,139,250,0.15)', border: '0.5px solid rgba(167,139,250,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, color: accent, flexShrink: 0 }}>
-                    {profiles?.full_name?.slice(0, 2).toUpperCase()}
+                    {(event.profiles as { full_name: string })?.full_name?.slice(0, 2).toUpperCase()}
                   </div>
                   <div>
-                    <p style={{ fontSize: 14, fontWeight: 600, color: '#fff' }}>{profiles?.full_name}</p>
+                    <p style={{ fontSize: 14, fontWeight: 600, color: '#fff' }}>{(event.profiles as { full_name: string })?.full_name}</p>
                     <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', marginTop: 2 }}>Organisateur vérifié</p>
                   </div>
                 </div>
-                {organizerPhone && (
-                  <div style={{ display: 'flex', gap: 10 }}>
-                    <a href={`https://wa.me/${organizerPhone.replace(/\D/g, '')}`} target="_blank" style={{ flex: 1, padding: '10px', background: 'rgba(37,211,102,0.1)', border: '0.5px solid rgba(37,211,102,0.2)', borderRadius: 10, fontSize: 13, color: '#25d366', textDecoration: 'none', textAlign: 'center', fontWeight: 600 }}>
-                      WhatsApp
-                    </a>
-                    <a href={`tel:${organizerPhone}`} style={{ flex: 1, padding: '10px', background: 'rgba(96,165,250,0.1)', border: '0.5px solid rgba(96,165,250,0.2)', borderRadius: 10, fontSize: 13, color: '#60a5fa', textDecoration: 'none', textAlign: 'center', fontWeight: 600 }}>
-                      Appeler
-                    </a>
-                  </div>
-                )}
               </div>
             </div>
 
             {/* Réservation */}
             <div className="ed-booking">
-              <div style={{ background: '#111827', border: '0.5px solid rgba(167,139,250,0.2)', borderRadius: 20, padding: 28 }}>
+              <div style={{ background: '#111827', border: '0.5px solid rgba(167,139,250,0.2)', borderRadius: 20, padding: 28, overflow: 'hidden' }}>
+                {/* Prix */}
                 <div style={{ marginBottom: 20 }}>
                   <p style={{ fontSize: 32, fontWeight: 800, color: '#fff', letterSpacing: -1 }}>
                     {event.price_per_ticket === 0 ? 'Gratuit' : formatPrice(event.price_per_ticket)}
@@ -178,23 +153,18 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
                   {event.price_per_ticket > 0 && <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.35)', marginTop: 2 }}>par billet</p>}
                 </div>
 
+                {/* Stock */}
                 <div style={{ marginBottom: 24 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
                     <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>{remaining} / {event.total_capacity} billets restants</span>
                     <span style={{ fontSize: 12, fontWeight: 600, color: fillRate >= 90 ? '#f87171' : fillRate >= 60 ? '#fbbf24' : '#22d3a5' }}>{fillRate}%</span>
                   </div>
                   <div style={{ height: 6, background: 'rgba(255,255,255,0.06)', borderRadius: 3, overflow: 'hidden' }}>
-                    <div style={{ height: '100%', borderRadius: 3, background: fillRate >= 90 ? '#f87171' : fillRate >= 60 ? '#fbbf24' : accent, width: `${fillRate}%` }} />
+                    <div style={{ height: '100%', borderRadius: 3, background: fillRate >= 90 ? '#f87171' : fillRate >= 60 ? '#fbbf24' : accent, width: `${fillRate}%`, transition: 'width 0.5s ease' }} />
                   </div>
                 </div>
 
-                <BookingFormEvent
-                  event={event}
-                  remaining={remaining}
-                  isLoggedIn={!!user}
-                  isPast={isPast}
-                  organizerPhone={organizerPhone}
-                />
+                <BookingFormEvent event={event} remaining={remaining} isLoggedIn={!!user} isPast={isPast} />
               </div>
             </div>
           </div>
