@@ -8,7 +8,7 @@ import { formatPrice } from '@/lib/utils'
 type Props = {
   event: {
     id: string
-    organizer_id: string
+    owner_id: string
     price_per_ticket: number
     profiles?: {
       full_name?: string | null
@@ -43,9 +43,7 @@ export default function BookingFormEvent({
   function normalizePhone(phone: string) {
     if (!phone) return ''
     let p = phone.replace(/\D/g, '')
-    // Déjà au format international avec indicatif
     if (p.startsWith('225')) return p
-    // Format local : ajouter 225 SANS enlever le 0
     return '225' + p
   }
 
@@ -61,7 +59,6 @@ export default function BookingFormEvent({
     if (!userData?.user) { router.push('/login'); return }
     const user = userData.user
 
-    // Récupérer infos profil acheteur
     const { data: profileRaw } = await supabase
       .from('profiles')
       .select('full_name, phone')
@@ -69,8 +66,7 @@ export default function BookingFormEvent({
       .maybeSingle()
     const profile = profileRaw as any
 
-    // Insert dans bookings (même table que DashboardEvenement)
-    const { data: booking, error } = await (supabase as any)
+    const { error } = await (supabase as any)
       .from('bookings')
       .insert({
         reference: ref,
@@ -79,13 +75,10 @@ export default function BookingFormEvent({
         tickets_count: quantity,
         total_price: total,
         user_id: user.id,
-        client_name: profile?.full_name ?? user.email,
-        client_phone: profile?.phone ?? organizerPhone ?? '',  // ← ajouter cette ligne
-
+        client_name: profile?.full_name ?? user.email ?? '',
+        client_phone: profile?.phone ?? '',
         status: 'pending'
       })
-      .select()
-      .single()
 
     if (error) {
       console.error('Booking error:', error)
@@ -96,7 +89,7 @@ export default function BookingFormEvent({
 
     // Notification organisateur
     await (supabase as any).from('notifications').insert({
-      user_id: event.organizer_id,
+      user_id: event.owner_id,
       title: '🎟️ Nouvelle réservation',
       message: `${quantity} billet(s) demandés — Réf: ${ref}`,
       type: 'success'
