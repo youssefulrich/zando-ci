@@ -99,7 +99,7 @@ export default function CreerBoutiquePage() {
     // Mettre à jour account_type en seller
     await (supabase as any).from('profiles').update({ account_type: 'seller' }).eq('id', user.id)
 
-    router.push(`/boutique/${shop.id}?created=1`)
+    router.push(`/shops/${shop.id}?created=1`)
   }
 
   return (

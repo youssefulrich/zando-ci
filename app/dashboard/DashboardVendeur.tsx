@@ -37,23 +37,17 @@ export default function DashboardVendeur({ profile, userId }: { profile: Profile
     setStats({ total_orders: allOrders.length, pending, confirmed, total_sales: totalSales })
   }
 
-  // CORRECTION : mise à jour locale sans reload complet
   async function updateOrderStatus(orderId: string, newStatus: string) {
     setActionLoading(orderId)
     const supabase = createClient()
-    const { error } = await (supabase as any)
-      .from('orders')
-      .update({ status: newStatus })
-      .eq('id', orderId)
-
+    const { error } = await (supabase as any).from('orders').update({ status: newStatus }).eq('id', orderId)
     if (!error) {
       const wasPending = orders.find((o: any) => o.id === orderId)?.status === 'pending'
       setOrders(prev => prev.map((o: any) => o.id === orderId ? { ...o, status: newStatus } : o))
       setStats(prev => ({
         ...prev,
         pending: wasPending ? Math.max(0, prev.pending - 1) : prev.pending,
-        confirmed: ['confirmed', 'shipped', 'delivered'].includes(newStatus) && wasPending
-          ? prev.confirmed + 1 : prev.confirmed,
+        confirmed: ['confirmed', 'shipped', 'delivered'].includes(newStatus) && wasPending ? prev.confirmed + 1 : prev.confirmed,
       }))
     } else {
       console.error('Erreur update commande:', error)
@@ -202,18 +196,10 @@ export default function DashboardVendeur({ profile, userId }: { profile: Profile
                         <p style={{ fontSize: 14, fontWeight: 700, color: '#fff', flexShrink: 0 }}>{formatPrice(o.total_price)}</p>
                       </div>
                       <div style={{ display: 'flex', gap: 8 }}>
-                        <button
-                          onClick={() => updateOrderStatus(o.id, 'confirmed')}
-                          disabled={actionLoading === o.id}
-                          style={{ flex: 1, padding: '9px', background: actionLoading === o.id ? 'rgba(34,211,165,0.3)' : '#22d3a5', color: '#0a1a14', borderRadius: 10, border: 'none', fontSize: 13, fontWeight: 700, cursor: actionLoading === o.id ? 'wait' : 'pointer' }}
-                        >
+                        <button onClick={() => updateOrderStatus(o.id, 'confirmed')} disabled={actionLoading === o.id} style={{ flex: 1, padding: '9px', background: actionLoading === o.id ? 'rgba(34,211,165,0.3)' : '#22d3a5', color: '#0a1a14', borderRadius: 10, border: 'none', fontSize: 13, fontWeight: 700, cursor: actionLoading === o.id ? 'wait' : 'pointer' }}>
                           {actionLoading === o.id ? '...' : '✓ Confirmer'}
                         </button>
-                        <button
-                          onClick={() => updateOrderStatus(o.id, 'cancelled')}
-                          disabled={actionLoading === o.id}
-                          style={{ flex: 1, padding: '9px', background: 'rgba(248,113,113,0.1)', color: '#f87171', borderRadius: 10, border: '0.5px solid rgba(248,113,113,0.2)', fontSize: 13, cursor: actionLoading === o.id ? 'wait' : 'pointer' }}
-                        >
+                        <button onClick={() => updateOrderStatus(o.id, 'cancelled')} disabled={actionLoading === o.id} style={{ flex: 1, padding: '9px', background: 'rgba(248,113,113,0.1)', color: '#f87171', borderRadius: 10, border: '0.5px solid rgba(248,113,113,0.2)', fontSize: 13, cursor: actionLoading === o.id ? 'wait' : 'pointer' }}>
                           {actionLoading === o.id ? '...' : '✕ Refuser'}
                         </button>
                       </div>
@@ -223,33 +209,74 @@ export default function DashboardVendeur({ profile, userId }: { profile: Profile
               )}
 
               <div className="dv-two">
+                {/* Mes produits */}
                 <div className="dv-card">
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
                     <h2 style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>Mes produits</h2>
                     <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                      <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', background: 'rgba(255,255,255,0.05)', padding: '2px 8px', borderRadius: 20 }}>{products.filter((p: any) => p.status === 'active').length}</span>
+                      <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', background: 'rgba(255,255,255,0.05)', padding: '2px 8px', borderRadius: 20 }}>
+                        {products.filter((p: any) => p.status === 'active').length}
+                      </span>
                       <Link href="/publier/produit" style={{ fontSize: 11, color: accent, textDecoration: 'none', padding: '4px 10px', borderRadius: 8, background: 'rgba(251,146,60,0.08)', border: '0.5px solid rgba(251,146,60,0.2)' }}>+ Ajouter</Link>
                     </div>
                   </div>
+
                   {products.filter((p: any) => p.status === 'active').length > 0 ? (
                     <div>
                       {products.filter((p: any) => p.status === 'active').slice(0, 6).map((p: any) => (
                         <div key={p.id} className="dv-prod">
+                          {/* Thumbnail */}
                           <div style={{ width: 48, height: 48, borderRadius: 10, overflow: 'hidden', background: '#1a2236', flexShrink: 0 }}>
-                            {p.photos?.[0] ? <img src={p.photos[0]} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, color: 'rgba(255,255,255,0.15)' }}>📦</div>}
+                            {p.photos?.[0]
+                              ? <img src={p.photos[0]} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                              : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, color: 'rgba(255,255,255,0.15)' }}>📦</div>
+                            }
                           </div>
+
+                          {/* Infos */}
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <p style={{ fontSize: 13, fontWeight: 600, color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginBottom: 2 }}>{p.name}</p>
                             <p style={{ fontSize: 12, color: accent, marginBottom: 4 }}>{formatPrice(p.price)}</p>
                             <div style={{ display: 'flex', gap: 5 }}>
-                              <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 20, background: p.available ? 'rgba(34,211,165,0.1)' : 'rgba(248,113,113,0.1)', color: p.available ? '#22d3a5' : '#f87171' }}>{p.available ? 'Disponible' : 'Masqué'}</span>
-                              {p.stock > 0 && <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 20, background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.4)' }}>Stock: {p.stock}</span>}
+                              <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 20, background: p.available ? 'rgba(34,211,165,0.1)' : 'rgba(248,113,113,0.1)', color: p.available ? '#22d3a5' : '#f87171' }}>
+                                {p.available ? 'Disponible' : 'Masqué'}
+                              </span>
+                              {p.stock > 0 && (
+                                <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 20, background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.4)' }}>Stock: {p.stock}</span>
+                              )}
                             </div>
                           </div>
+
+                          {/* Actions — 4 boutons dont Modifier */}
                           <div className="dv-prod-actions">
-                            <Link href={`/boutique/produit/${p.id}`} className="dv-act-btn" style={{ color: accent, border: '0.5px solid rgba(251,146,60,0.2)', background: 'rgba(251,146,60,0.08)' }}>Voir</Link>
-                            <button onClick={() => toggleProduct(p.id, p.available)} className="dv-act-btn" style={{ color: '#60a5fa', border: '0.5px solid rgba(96,165,250,0.2)', background: 'rgba(96,165,250,0.08)' }}>{p.available ? 'Masquer' : 'Afficher'}</button>
-                            <button onClick={() => deleteProduct(p.id)} className="dv-act-btn" style={{ color: '#f87171', border: '0.5px solid rgba(248,113,113,0.2)', background: 'rgba(248,113,113,0.08)' }}>Retirer</button>
+                            <Link
+                              href={`/boutique/produit/${p.id}`}
+                              className="dv-act-btn"
+                              style={{ color: accent, border: '0.5px solid rgba(251,146,60,0.2)', background: 'rgba(251,146,60,0.08)' }}
+                            >
+                              Voir
+                            </Link>
+                            <Link
+                              href={`/modifier/produit?id=${p.id}`}
+                              className="dv-act-btn"
+                              style={{ color: '#22d3a5', border: '0.5px solid rgba(34,211,165,0.2)', background: 'rgba(34,211,165,0.08)' }}
+                            >
+                              Modifier
+                            </Link>
+                            <button
+                              onClick={() => toggleProduct(p.id, p.available)}
+                              className="dv-act-btn"
+                              style={{ color: '#60a5fa', border: '0.5px solid rgba(96,165,250,0.2)', background: 'rgba(96,165,250,0.08)' }}
+                            >
+                              {p.available ? 'Masquer' : 'Afficher'}
+                            </button>
+                            <button
+                              onClick={() => deleteProduct(p.id)}
+                              className="dv-act-btn"
+                              style={{ color: '#f87171', border: '0.5px solid rgba(248,113,113,0.2)', background: 'rgba(248,113,113,0.08)' }}
+                            >
+                              Retirer
+                            </button>
                           </div>
                         </div>
                       ))}
@@ -257,11 +284,14 @@ export default function DashboardVendeur({ profile, userId }: { profile: Profile
                   ) : (
                     <div style={{ textAlign: 'center', padding: '28px 0' }}>
                       <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.3)', marginBottom: 12 }}>Aucun produit publié</p>
-                      <Link href="/publier/produit" style={{ fontSize: 13, color: accent, textDecoration: 'none', padding: '8px 16px', borderRadius: 10, border: '0.5px solid rgba(251,146,60,0.2)', background: 'rgba(251,146,60,0.08)' }}>+ Ajouter mon premier produit</Link>
+                      <Link href="/publier/produit" style={{ fontSize: 13, color: accent, textDecoration: 'none', padding: '8px 16px', borderRadius: 10, border: '0.5px solid rgba(251,146,60,0.2)', background: 'rgba(251,146,60,0.08)' }}>
+                        + Ajouter mon premier produit
+                      </Link>
                     </div>
                   )}
                 </div>
 
+                {/* Commandes reçues */}
                 <div className="dv-card">
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
                     <h2 style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>Commandes reçues</h2>
@@ -284,8 +314,16 @@ export default function DashboardVendeur({ profile, userId }: { profile: Profile
                                 <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 8px', borderRadius: 20, color: sc.c, background: sc.bg }}>{statusLabel(o.status)}</span>
                               </div>
                             </div>
-                            {o.status === 'confirmed' && <button onClick={() => updateOrderStatus(o.id, 'shipped')} style={{ fontSize: 11, padding: '6px 12px', background: 'rgba(96,165,250,0.1)', color: '#60a5fa', border: '0.5px solid rgba(96,165,250,0.2)', borderRadius: 8, cursor: 'pointer' }}>🚚 Marquer expédiée</button>}
-                            {o.status === 'shipped' && <button onClick={() => updateOrderStatus(o.id, 'delivered')} style={{ fontSize: 11, padding: '6px 12px', background: 'rgba(34,211,165,0.1)', color: '#22d3a5', border: '0.5px solid rgba(34,211,165,0.2)', borderRadius: 8, cursor: 'pointer' }}>✅ Marquer livrée</button>}
+                            {o.status === 'confirmed' && (
+                              <button onClick={() => updateOrderStatus(o.id, 'shipped')} style={{ fontSize: 11, padding: '6px 12px', background: 'rgba(96,165,250,0.1)', color: '#60a5fa', border: '0.5px solid rgba(96,165,250,0.2)', borderRadius: 8, cursor: 'pointer' }}>
+                                🚚 Marquer expédiée
+                              </button>
+                            )}
+                            {o.status === 'shipped' && (
+                              <button onClick={() => updateOrderStatus(o.id, 'delivered')} style={{ fontSize: 11, padding: '6px 12px', background: 'rgba(34,211,165,0.1)', color: '#22d3a5', border: '0.5px solid rgba(34,211,165,0.2)', borderRadius: 8, cursor: 'pointer' }}>
+                                ✅ Marquer livrée
+                              </button>
+                            )}
                           </div>
                         )
                       })}
@@ -298,14 +336,20 @@ export default function DashboardVendeur({ profile, userId }: { profile: Profile
                 </div>
               </div>
 
+              {/* Lien boutique publique */}
               <div style={{ marginTop: 16, background: 'rgba(251,146,60,0.05)', border: '0.5px solid rgba(251,146,60,0.15)', borderRadius: 12, padding: '14px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
                 <div>
                   <p style={{ fontSize: 13, fontWeight: 600, color: '#fff', marginBottom: 2 }}>Votre boutique publique</p>
                   <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)' }}>Partagez ce lien à vos clients</p>
                 </div>
-                <Link href={`/shops/${shop.id}`} target="_blank" style={{ fontSize: 13, color: accent, textDecoration: 'none', padding: '8px 16px', borderRadius: 10, border: '0.5px solid rgba(251,146,60,0.2)', background: 'rgba(251,146,60,0.08)', fontWeight: 600, whiteSpace: 'nowrap' }}>
-                  Voir ma boutique →
-                </Link>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  <Link href="/modifier/boutique" style={{ fontSize: 13, color: '#60a5fa', textDecoration: 'none', padding: '8px 16px', borderRadius: 10, border: '0.5px solid rgba(96,165,250,0.2)', background: 'rgba(96,165,250,0.08)', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                    ✏️ Modifier boutique
+                  </Link>
+                  <Link href={`/shops/${shop.id}`} target="_blank" style={{ fontSize: 13, color: accent, textDecoration: 'none', padding: '8px 16px', borderRadius: 10, border: '0.5px solid rgba(251,146,60,0.2)', background: 'rgba(251,146,60,0.08)', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                    Voir ma boutique →
+                  </Link>
+                </div>
               </div>
             </>
           )}

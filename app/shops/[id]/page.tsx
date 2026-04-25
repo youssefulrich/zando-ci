@@ -237,7 +237,7 @@ export default async function ShopPage({ params }: { params: Promise<{ id: strin
               {products.map(p => {
                 const photo = Array.isArray(p.photos) && p.photos[0] ? p.photos[0] : null
                 return (
-                  <Link key={p.id} href={`/boutique/${p.id}`} className="sp-card">
+                  <Link key={p.id} href={`/boutique/produit/${p.id}`} className="sp-card">
 
                     <div style={{ position: 'relative' }}>
                       <div style={{ aspectRatio: '1', overflow: 'hidden', background: '#1a2236' }}>

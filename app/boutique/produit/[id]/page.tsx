@@ -120,7 +120,7 @@ export default function ProduitDetailPage({ params }: { params: Promise<{ id: st
 
   const photos = product.photos?.length > 0 ? product.photos : (product.main_photo ? [product.main_photo] : [])
   const isService = product.type === 'service'
-  const isOutOfStock = !isService && product.stock !== null && product.stock <= 0
+  const isOutOfStock = false
 
   return (
     <>
@@ -245,8 +245,8 @@ export default function ProduitDetailPage({ params }: { params: Promise<{ id: st
 
               {/* Stock */}
               {!isService && product.stock !== null && (
-                <p style={{ fontSize: 12, color: product.stock > 0 ? '#22d3a5' : '#f87171', marginBottom: 16 }}>
-                  {product.stock > 0 ? `✓ ${product.stock} en stock` : '✕ Rupture de stock'}
+                <p style={{ fontSize: 12, color: product.stock > 0 ? '#22d3a5' : '#fbbf24', marginBottom: 16 }}>
+                  {product.stock > 0 ? `✓ ${product.stock} en stock` : ' 📦Sur commande'}
                 </p>
               )}
 

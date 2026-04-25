@@ -232,7 +232,7 @@ export default async function MesBoutiquesPage({
               {shops.map((shop: any) => {
                 const productCount = shop.products?.[0]?.count ?? 0
                 return (
-                  <Link key={shop.id} href={`/boutique/shop/${shop.id}`} className="mb-card">
+                  <Link key={shop.id} href={`/shops/${shop.id}`} className="mb-card">
 
                     {/* Bannière de couleur */}
                     <div className="mb-card-banner">

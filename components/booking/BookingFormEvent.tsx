@@ -2,11 +2,13 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { createClient } from '@/lib/supabase/client'
 import { formatPrice } from '@/lib/utils'
 
 type Props = {
   event: {
     id: string
+    organizer_id: string
     price_per_ticket: number
     profiles?: {
       full_name?: string | null
@@ -29,142 +31,141 @@ export default function BookingFormEvent({
   organizerPhone
 }: Props) {
   const router = useRouter()
+  const supabase = createClient()
+
   const [quantity, setQuantity] = useState(1)
+  const [loading, setLoading] = useState(false)
+  const [errorMsg, setErrorMsg] = useState('')
 
   const max = Math.min(remaining, 10)
   const total = quantity * event.price_per_ticket
-  const accent = '#a78bfa'
 
-  // ✅ SAFE (plus de any, plus de bug null)
-  const contactNumber =
-    organizerWhatsapp ||
-    organizerPhone ||
-    event.profiles?.phone ||
-    undefined
+  function normalizePhone(phone: string) {
+    if (!phone) return ''
+    let p = phone.replace(/\D/g, '')
+    // Déjà au format international avec indicatif
+    if (p.startsWith('225')) return p
+    // Format local : ajouter 225 SANS enlever le 0
+    return '225' + p
+  }
 
-  function buildWhatsAppMessage() {
-    if (!contactNumber) return '#'
+  async function handleReservation() {
+    if (!isLoggedIn) { router.push('/login'); return }
+
+    setLoading(true)
+    setErrorMsg('')
+
+    const ref = 'ZEV-' + Math.random().toString(36).slice(2, 10).toUpperCase()
+
+    const { data: userData } = await supabase.auth.getUser()
+    if (!userData?.user) { router.push('/login'); return }
+    const user = userData.user
+
+    // Récupérer infos profil acheteur
+    const { data: profileRaw } = await supabase
+      .from('profiles')
+      .select('full_name, phone')
+      .eq('id', user.id)
+      .maybeSingle()
+    const profile = profileRaw as any
+
+    // Insert dans bookings (même table que DashboardEvenement)
+    const { data: booking, error } = await (supabase as any)
+      .from('bookings')
+      .insert({
+        reference: ref,
+        item_type: 'event',
+        item_id: event.id,
+        tickets_count: quantity,
+        total_price: total,
+        user_id: user.id,
+        client_name: profile?.full_name ?? user.email,
+        client_phone: profile?.phone ?? organizerPhone ?? '',  // ← ajouter cette ligne
+
+        status: 'pending'
+      })
+      .select()
+      .single()
+
+    if (error) {
+      console.error('Booking error:', error)
+      setErrorMsg(`Erreur : ${error.message}`)
+      setLoading(false)
+      return
+    }
+
+    // Notification organisateur
+    await (supabase as any).from('notifications').insert({
+      user_id: event.organizer_id,
+      title: '🎟️ Nouvelle réservation',
+      message: `${quantity} billet(s) demandés — Réf: ${ref}`,
+      type: 'success'
+    })
+
+    // WhatsApp
+    const phone =
+      normalizePhone(organizerWhatsapp ?? '') ||
+      normalizePhone(organizerPhone ?? '') ||
+      ''
 
     const msg = encodeURIComponent(
-      `Bonjour, je souhaite réserver ${quantity} billet${quantity > 1 ? 's' : ''} pour votre événement sur Zando CI.\n\n` +
-      `Montant total : ${formatPrice(total)} FCFA\n\n` +
-      `Merci de confirmer la disponibilité.`
+      `Bonjour, je viens de réserver ${quantity} billet(s).\nRéférence : ${ref}\nTotal : ${formatPrice(total)} FCFA`
     )
+    const wa = phone ? `https://wa.me/${phone}?text=${msg}` : ''
 
-    const phone = contactNumber.replace(/\D/g, '')
-    return `https://wa.me/${phone}?text=${msg}`
-  }
-
-  function buildSMSMessage() {
-    if (!contactNumber) return '#'
-
-    const msg = encodeURIComponent(
-      `Bonjour, je veux réserver ${quantity} billet${quantity > 1 ? 's' : ''} - ${formatPrice(total)} FCFA (Zando CI)`
-    )
-
-    return `sms:${contactNumber}?body=${msg}`
-  }
-
-  if (isPast) {
-    return (
-      <div style={{ textAlign: 'center', padding: '16px 0' }}>
-        <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.35)' }}>
-          Cet événement est terminé
-        </p>
-      </div>
+    router.push(
+      `/event/confirmation?ref=${ref}&wa=${encodeURIComponent(wa)}&total=${total}&qty=${quantity}`
     )
   }
 
-  if (remaining <= 0) {
-    return (
-      <div
-        style={{
-          textAlign: 'center',
-          padding: '16px',
-          background: 'rgba(248,113,113,0.08)',
-          border: '0.5px solid rgba(248,113,113,0.2)',
-          borderRadius: 12
-        }}
-      >
-        <p style={{ fontSize: 13, color: '#f87171', fontWeight: 600 }}>
-          Complet
-        </p>
-        <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', marginTop: 4 }}>
-          Plus de billets disponibles
-        </p>
-      </div>
-    )
-  }
+  if (isPast) return (
+    <p style={{ color: 'gray', textAlign: 'center' }}>Cet événement est terminé</p>
+  )
+
+  if (remaining <= 0) return (
+    <p style={{ color: '#f87171', background: 'rgba(248,113,113,0.08)', padding: 12, borderRadius: 10, textAlign: 'center' }}>Complet</p>
+  )
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
       {/* Quantité */}
       <div>
-        <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', marginBottom: 10 }}>
-          Nombre de billets
-        </p>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          <button onClick={() => setQuantity(q => Math.max(1, q - 1))}>
-            −
-          </button>
-
-          <span>{quantity}</span>
-
-          <button onClick={() => setQuantity(q => Math.min(max, q + 1))}>
-            +
-          </button>
-
-          <span style={{ fontSize: 12, opacity: 0.5 }}>
-            max {max}
-          </span>
+        <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12, marginBottom: 10 }}>Nombre de billets</p>
+        <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+          <button
+            onClick={() => setQuantity(q => Math.max(1, q - 1))}
+            style={{ width: 36, height: 36, borderRadius: 8, background: 'rgba(255,255,255,0.08)', border: '0.5px solid rgba(255,255,255,0.1)', color: '#fff', fontSize: 18, cursor: 'pointer' }}
+          >−</button>
+          <span style={{ fontSize: 17, fontWeight: 700, color: '#fff', minWidth: 20, textAlign: 'center' }}>{quantity}</span>
+          <button
+            onClick={() => setQuantity(q => Math.min(max, q + 1))}
+            style={{ width: 36, height: 36, borderRadius: 8, background: 'rgba(255,255,255,0.08)', border: '0.5px solid rgba(255,255,255,0.1)', color: '#fff', fontSize: 18, cursor: 'pointer' }}
+          >+</button>
+          <span style={{ opacity: 0.4, fontSize: 12 }}>max {max}</span>
         </div>
       </div>
 
       {/* Total */}
-      {event.price_per_ticket > 0 && (
-        <div>
-          <p>
-            {formatPrice(event.price_per_ticket)} × {quantity}
-          </p>
-          <strong>Total : {formatPrice(total)}</strong>
+      <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.7)' }}>
+        Total : <strong style={{ color: '#a78bfa', fontSize: 16 }}>{formatPrice(total)} FCFA</strong>
+      </p>
+
+      {/* Erreur */}
+      {errorMsg && (
+        <div style={{ background: 'rgba(248,113,113,0.08)', border: '0.5px solid rgba(248,113,113,0.2)', borderRadius: 10, padding: '10px 14px' }}>
+          <p style={{ fontSize: 13, color: '#f87171' }}>⚠️ {errorMsg}</p>
         </div>
       )}
 
-      {/* Actions */}
-      {contactNumber ? (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          <a href={buildWhatsAppMessage()} target="_blank">
-            WhatsApp
-          </a>
-
-          <a href={`tel:${contactNumber}`}>
-            Appeler
-          </a>
-        </div>
-      ) : (
-        <button
-          onClick={() => {
-            if (!isLoggedIn) {
-              router.push('/login')
-              return
-            }
-
-            const params = new URLSearchParams({
-              item_type: 'event',
-              item_id: event.id,
-              tickets_count: String(quantity),
-              total: String(total)
-            })
-
-            router.push(`/checkout?${params}`)
-          }}
-        >
-          {isLoggedIn ? 'Réserver' : 'Connexion requise'}
-        </button>
-      )}
-
+      {/* Bouton */}
+      <button
+        onClick={handleReservation}
+        disabled={loading}
+        style={{ padding: 14, background: loading ? 'rgba(167,139,250,0.4)' : '#a78bfa', borderRadius: 10, border: 'none', color: 'white', fontSize: 15, fontWeight: 600, cursor: loading ? 'not-allowed' : 'pointer' }}
+      >
+        {loading ? 'Traitement...' : `Réserver — ${formatPrice(total)} FCFA`}
+      </button>
     </div>
   )
 }
