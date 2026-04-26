@@ -23,7 +23,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   const shop = p.shops as any
 
   return {
-    title: `${p.name} — ${formatPrice(p.price)} FCFA | ${shop?.name ?? 'Zando CI'}`,
+    title: `${p.name} — ${formatPrice(p.price)} | ${shop?.name ?? 'Zando CI'}`,
     description: p.description ?? `Achetez ${p.name} sur Zando CI`,
     openGraph: {
       title: `${p.name} — ${formatPrice(p.price)} FCFA`,
