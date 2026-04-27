@@ -67,13 +67,13 @@ export default function HomePage() {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400;1,600&family=Outfit:wght@300;400;500;600;700&display=swap');
 
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         html { scroll-behavior: smooth; }
         body {
           background: #070b12;
-          font-family: 'DM Sans', -apple-system, sans-serif;
+          font-family: 'Outfit', sans-serif;
           overflow-x: hidden;
           color: #e2e8f0;
         }
@@ -94,7 +94,7 @@ export default function HomePage() {
           padding: 0 28px; display: flex; align-items: center; justify-content: space-between;
         }
         .logo {
-          font-family: 'Syne', sans-serif;
+          font-family: 'Cormorant Garamond', serif;
           font-size: 20px; font-weight: 800; color: #fff;
           text-decoration: none; letter-spacing: -0.5px;
           display: flex; align-items: center; gap: 2px;
@@ -190,7 +190,7 @@ export default function HomePage() {
         .hero-tag-dot { width: 5px; height: 5px; border-radius: 50%; }
 
         .hero-h1 {
-          font-family: 'Syne', sans-serif;
+          font-family: 'Cormorant Garamond', serif;
           font-size: clamp(36px, 5.5vw, 66px);
           font-weight: 800; color: #fff; line-height: 1.05;
           letter-spacing: -2px; margin-bottom: 16px;
@@ -209,7 +209,7 @@ export default function HomePage() {
           padding: 14px 30px; font-size: 14px; font-weight: 600;
           color: #070b12; border-radius: 100px; text-decoration: none;
           transition: all 0.25s; display: inline-block;
-          font-family: 'DM Sans', sans-serif;
+          font-family: 'Outfit', sans-serif;
         }
         .hbtn-main:hover { transform: translateY(-2px); filter: brightness(1.05); }
         .hbtn-sec {
@@ -249,7 +249,7 @@ export default function HomePage() {
         }
         .slogan-line { flex: 1; height: 0.5px; background: linear-gradient(to right, transparent, rgba(255,255,255,0.1), transparent); }
         .slogan-main {
-          font-family: 'Syne', sans-serif;
+          font-family: 'Cormorant Garamond', serif;
           font-size: clamp(18px, 2.5vw, 28px);
           font-weight: 700; color: #fff;
           letter-spacing: -0.5px; text-align: center;
@@ -273,8 +273,8 @@ export default function HomePage() {
         .stat:last-child { border-right: none; }
         .stat:hover { background: rgba(255,255,255,0.02); }
         .stat-n {
-          font-family: 'Syne', sans-serif;
-          font-size: 30px; font-weight: 800; letter-spacing: -1px;
+          font-family: 'Cormorant Garamond', serif;
+          font-size: 32px; font-weight: 600; letter-spacing: -0.5px;
           margin-bottom: 4px;
         }
         .stat-l { font-size: 11px; color: rgba(255,255,255,0.35); text-transform: uppercase; letter-spacing: 0.08em; }
@@ -288,7 +288,7 @@ export default function HomePage() {
         }
         .sec-label::before { content: ''; width: 20px; height: 1px; background: #22d3a5; }
         .sec-title {
-          font-family: 'Syne', sans-serif;
+          font-family: 'Cormorant Garamond', serif;
           font-size: clamp(24px, 3.5vw, 38px); font-weight: 800;
           color: #fff; letter-spacing: -1.5px; margin-bottom: 40px;
           line-height: 1.1;
@@ -312,7 +312,7 @@ export default function HomePage() {
         }
         .svc-info { position: absolute; bottom: 0; left: 0; right: 0; padding: 24px; z-index: 2; }
         .svc-cat { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.14em; margin-bottom: 6px; }
-        .svc-name { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 700; color: #fff; margin-bottom: 14px; line-height: 1.2; }
+        .svc-name { font-family: 'Cormorant Garamond', serif; font-size: 18px; font-weight: 700; color: #fff; margin-bottom: 14px; line-height: 1.2; }
         .svc-link {
           font-size: 12px; font-weight: 600; padding: 6px 14px;
           border-radius: 100px; border: 0.5px solid currentColor;
@@ -332,7 +332,7 @@ export default function HomePage() {
         .boutique-banner:hover { border-color: rgba(251,146,60,0.35); transform: translateY(-2px); }
         .boutique-banner-left { display: flex; align-items: center; gap: 20px; }
         .boutique-icon { font-size: 40px; }
-        .boutique-title { font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 800; color: #fff; letter-spacing: -0.5px; margin-bottom: 4px; }
+        .boutique-title { font-family: 'Cormorant Garamond', serif; font-size: 20px; font-weight: 800; color: #fff; letter-spacing: -0.5px; margin-bottom: 4px; }
         .boutique-sub { font-size: 13px; color: rgba(255,255,255,0.4); }
         .boutique-cta { font-size: 13px; font-weight: 600; color: #fb923c; padding: 10px 22px; border-radius: 100px; border: 0.5px solid rgba(251,146,60,0.3); background: rgba(251,146,60,0.08); white-space: nowrap; transition: all 0.2s; }
         .boutique-banner:hover .boutique-cta { background: rgba(251,146,60,0.15); }
@@ -352,7 +352,7 @@ export default function HomePage() {
           background: radial-gradient(circle, rgba(34,211,165,0.06) 0%, transparent 70%);
         }
         .pay-text { flex: 1; position: relative; z-index: 1; }
-        .pay-title { font-family: 'Syne', sans-serif; font-size: clamp(24px, 3vw, 36px); font-weight: 800; color: #fff; letter-spacing: -1.5px; margin: 12px 0 16px; line-height: 1.1; }
+        .pay-title { font-family: 'Cormorant Garamond', serif; font-size: clamp(24px, 3vw, 36px); font-weight: 800; color: #fff; letter-spacing: -1.5px; margin: 12px 0 16px; line-height: 1.1; }
         .pay-desc { font-size: 14px; color: rgba(255,255,255,0.4); line-height: 1.8; max-width: 380px; margin-bottom: 28px; font-weight: 300; }
         .pay-chips { display: flex; flex-wrap: wrap; gap: 8px; }
         .pay-chip { font-size: 13px; font-weight: 500; color: rgba(255,255,255,0.6); padding: 8px 18px; background: rgba(255,255,255,0.04); border: 0.5px solid rgba(255,255,255,0.08); border-radius: 100px; }
@@ -378,14 +378,14 @@ export default function HomePage() {
         }
         .how-card:hover { border-color: rgba(34,211,165,0.2); transform: translateY(-3px); }
         .how-num {
-          font-family: 'Syne', sans-serif;
+          font-family: 'Cormorant Garamond', serif;
           font-size: 64px; font-weight: 800;
           color: rgba(255,255,255,0.04);
           position: absolute; top: 12px; right: 20px;
           line-height: 1; letter-spacing: -3px;
         }
         .how-icon { font-size: 32px; margin-bottom: 20px; display: block; }
-        .how-title { font-family: 'Syne', sans-serif; font-size: 17px; font-weight: 700; color: #fff; margin-bottom: 10px; letter-spacing: -0.3px; }
+        .how-title { font-family: 'Cormorant Garamond', serif; font-size: 17px; font-weight: 700; color: #fff; margin-bottom: 10px; letter-spacing: -0.3px; }
         .how-desc { font-size: 13px; color: rgba(255,255,255,0.4); line-height: 1.75; font-weight: 300; }
 
         /* ── CTA ── */
@@ -409,9 +409,9 @@ export default function HomePage() {
         }
         .cta-slogan::before, .cta-slogan::after { content: ''; width: 32px; height: 0.5px; background: rgba(34,211,165,0.4); }
         .cta-title {
-          font-family: 'Syne', sans-serif;
+          font-family: 'Cormorant Garamond', serif;
           font-size: clamp(26px, 4.5vw, 48px); font-weight: 800;
-          color: #fff; letter-spacing: -2px; margin-bottom: 16px; line-height: 1.1;
+          color: #fff; letter-spacing: -1px; margin-bottom: 16px; line-height: 1.05;
           position: relative; z-index: 1;
         }
         .cta-sub {
@@ -424,7 +424,7 @@ export default function HomePage() {
           background: #22d3a5; color: #070b12;
           border-radius: 100px; font-size: 14px; font-weight: 700;
           text-decoration: none; transition: all 0.25s;
-          position: relative; z-index: 1; font-family: 'DM Sans', sans-serif;
+          position: relative; z-index: 1; font-family: 'Outfit', sans-serif;
         }
         .cta-btn:hover { background: #1ec99c; transform: translateY(-2px); box-shadow: 0 12px 32px rgba(34,211,165,0.25); }
 
