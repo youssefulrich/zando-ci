@@ -100,7 +100,7 @@ export default async function BoutiquePage({
         .bq-search-btn {
           flex-shrink: 0;
           padding: 12px 18px;
-          background: #22d3a5;
+          background: #fb923c;
           color: #0a1a14;
           border-radius: 12px;
           border: none;
@@ -114,7 +114,7 @@ export default async function BoutiquePage({
         .bq-cta-btn {
           display: inline-block;
           padding: 12px 22px;
-          background: #22d3a5;
+          background: #fb923c;
           color: #0a1a14;
           border-radius: 12px;
           font-size: 13px;
@@ -150,7 +150,7 @@ export default async function BoutiquePage({
         .bq-cat.active {
           background: rgba(34,211,165,0.12);
           border-color: rgba(34,211,165,0.3);
-          color: #22d3a5;
+          color: #d36c22;
           font-weight: 600;
         }
 
@@ -193,7 +193,7 @@ export default async function BoutiquePage({
 
             <div className="bq-hero-top">
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 11, color: '#22d3a5', textTransform: 'uppercase', letterSpacing: 2, fontWeight: 600, marginBottom: 10 }}>
+                <div style={{ fontSize: 11, color: '#fb923c', textTransform: 'uppercase', letterSpacing: 2, fontWeight: 600, marginBottom: 10 }}>
                   Marketplace
                 </div>
                 <h1 style={{ fontSize: 30, fontWeight: 800, color: '#fff', letterSpacing: -1, marginBottom: 6, lineHeight: 1.2 }}>
@@ -207,7 +207,7 @@ export default async function BoutiquePage({
                 <div className="bq-hero-bottom-row">
                   <div className="bq-stats">
                     <div className="bq-stat">
-                      <p style={{ fontSize: 22, fontWeight: 800, color: '#22d3a5', lineHeight: 1 }}>{totalProducts ?? 0}</p>
+                      <p style={{ fontSize: 22, fontWeight: 800, color: '#fb923c', lineHeight: 1 }}>{totalProducts ?? 0}</p>
                       <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', marginTop: 4 }}>Produits</p>
                     </div>
                     <div className="bq-stat">
@@ -259,7 +259,7 @@ export default async function BoutiquePage({
               {category !== 'all' ? ` · ${CATEGORIES.find(c => c.value === category)?.label}` : ''}
               {q ? ` · "${q}"` : ''}
             </p>
-            <Link href="/boutique/mes-boutiques" style={{ fontSize: 13, color: '#22d3a5', textDecoration: 'none' }}>
+            <Link href="/boutique/mes-boutiques" style={{ fontSize: 13, color: '#fb923c', textDecoration: 'none' }}>
               Voir toutes les boutiques →
             </Link>
           </div>
@@ -282,7 +282,7 @@ export default async function BoutiquePage({
                       {p.name}
                     </p>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 4 }}>
-                      <span style={{ fontSize: 14, fontWeight: 800, color: '#22d3a5' }}>{formatPrice(p.price)}</span>
+                      <span style={{ fontSize: 14, fontWeight: 800, color: '#fb923c' }}>{formatPrice(p.price)}</span>
                       <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                         {p.type === 'service' && (
                           <span style={{ fontSize: 9, fontWeight: 700, padding: '2px 6px', borderRadius: 20, background: 'rgba(167,139,250,0.15)', color: '#a78bfa' }}>SERVICE</span>
@@ -308,7 +308,7 @@ export default async function BoutiquePage({
               <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.2)' }}>Soyez le premier à vendre sur Zando CI</p>
               <Link href="/creer-boutique" style={{
                 display: 'inline-block', marginTop: 20, padding: '12px 24px',
-                background: '#22d3a5', color: '#0a1a14', borderRadius: 12,
+                background: '#fb923c', color: '#0a1a14', borderRadius: 12,
                 fontSize: 14, fontWeight: 700, textDecoration: 'none',
               }}>Ouvrir ma boutique</Link>
             </div>
