@@ -200,7 +200,7 @@ export default async function BoutiquePage({
                   Boutique Zando CI
                 </h1>
                 <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.4)', lineHeight: 1.6 }}>
-                  Produits & services de vendeurs ivoiriens
+                  Produits & services de vendeurs
                 </p>
 
                 {/* Stats + bouton CTA sur la même ligne */}
