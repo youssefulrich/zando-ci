@@ -4,14 +4,21 @@ import Navbar from '@/components/layout/Navbar'
 import { formatPrice } from '@/lib/utils'
 
 const CATEGORIES = [
-  { value: 'all', label: 'Tout', icon: '◈' },
-  { value: 'mode', label: 'Mode', icon: '👗' },
-  { value: 'electronique', label: 'Électronique', icon: '📱' },
-  { value: 'alimentaire', label: 'Alimentaire', icon: '🍽️' },
-  { value: 'beaute', label: 'Beauté', icon: '💄' },
-  { value: 'maison', label: 'Maison', icon: '🏠' },
-  { value: 'service', label: 'Services', icon: '⚙️' },
-  { value: 'autre', label: 'Autre', icon: '📦' },
+  { value: 'all',          label: 'Tout',         emoji: '🏠' },
+  { value: 'mode',         label: 'Mode',          emoji: '👗' },
+  { value: 'electronique', label: 'Électronique',  emoji: '📱' },
+  { value: 'alimentaire',  label: 'Alimentation',  emoji: '🍽️' },
+  { value: 'beaute',       label: 'Beauté',         emoji: '💄' },
+  { value: 'maison',       label: 'Maison',         emoji: '🏡' },
+  { value: 'service',      label: 'Services',       emoji: '⚙️' },
+  { value: 'sport',        label: 'Sport',          emoji: '⚽' },
+  { value: 'autre',        label: 'Autre',          emoji: '📦' },
+]
+
+const BANNERS = [
+  { bg: 'linear-gradient(120deg,#FF6B00,#FF9240)', label: 'PROMO DU JOUR',  title: "Jusqu'à -50%\nsur la mode",     sub: 'Offres limitées',   emoji: '👗' },
+  { bg: 'linear-gradient(120deg,#00897B,#00BCD4)', label: 'NOUVEAUTÉ',      title: 'Tech & Gadgets\narrivée fraîche', sub: 'Livraison express', emoji: '📱' },
+  { bg: 'linear-gradient(120deg,#7B1FA2,#E040FB)', label: 'EXCLUSIF',        title: 'Beauté premium\nprix imbattable', sub: 'Vendeurs vérifiés', emoji: '💄' },
 ]
 
 export default async function BoutiquePage({
@@ -21,299 +28,330 @@ export default async function BoutiquePage({
 }) {
   const sp = await searchParams
   const category = sp.category ?? 'all'
-  const city = sp.city ?? ''
-  const q = sp.q ?? ''
+  const city     = sp.city     ?? ''
+  const q        = sp.q        ?? ''
 
   const supabase = await createClient()
 
   let query = supabase
     .from('products')
-    .select('*, shops(name, city, logo_url, rating)')
+    .select('*, shops(name, city, logo_url)')
     .eq('status', 'active')
     .eq('available', true)
     .order('created_at', { ascending: false })
     .limit(48)
 
   if (category !== 'all') query = query.eq('category', category)
-  if (city) query = query.eq('city', city)
-  if (q) query = query.ilike('name', `%${q}%`)
+  if (city)               query = query.eq('city', city)
+  if (q)                  query = query.ilike('name', `%${q}%`)
 
   const { data: productsRaw } = await query
   const products = (productsRaw ?? []) as any[]
 
-  const { count: totalProducts } = await supabase.from('products').select('*', { count: 'exact', head: true }).eq('status', 'active')
-  const { count: totalShops } = await supabase.from('shops').select('*', { count: 'exact', head: true }).eq('status', 'active')
+  const { count: totalProducts } = await supabase
+    .from('products').select('*', { count: 'exact', head: true }).eq('status', 'active')
+  const { count: totalShops } = await supabase
+    .from('shops').select('*', { count: 'exact', head: true }).eq('status', 'active')
+
+  const flash = products.filter((p: any) => p.compare_price && p.compare_price > p.price).slice(0, 8)
 
   return (
     <>
       <style>{`
-        * { box-sizing: border-box; }
-        .bq { background: #0a0f1a; min-height: 100vh; }
-
-        /* HERO */
-        .bq-hero { background: linear-gradient(135deg, #0d1520 0%, #111827 100%); border-bottom: 0.5px solid rgba(255,255,255,0.06); padding: 48px 20px 40px; }
-        .bq-hero-inner { max-width: 1200px; margin: 0 auto; }
-
-        /* Top row : titre + CTA — colonne sur mobile, ligne sur desktop */
-        .bq-hero-top {
-          display: flex;
-          flex-direction: column;
-          gap: 20px;
-          margin-bottom: 24px;
-        }
-        @media (min-width: 640px) {
-          .bq-hero-top {
-            flex-direction: row;
-            align-items: flex-start;
-            justify-content: space-between;
-          }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        :root {
+          --bg:      #0E0E12;
+          --bg2:     #16161C;
+          --bg3:     #1E1E26;
+          --card:    #1A1A22;
+          --border:  rgba(255,255,255,0.07);
+          --orange:  #FF6B00;
+          --text:    #F0F0F0;
+          --muted:   #888;
+          --muted2:  #444;
         }
 
-        /* Ligne stats + bouton sur mobile */
-        .bq-hero-bottom-row {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          flex-wrap: wrap;
-          gap: 12px;
-          margin-top: 20px;
-        }
+        .bl { background: var(--bg); min-height: 100vh; font-family: 'Segoe UI', system-ui, sans-serif; color: var(--text); }
 
-        /* Barre de recherche — ne déborde jamais */
-        .bq-search {
-          display: flex;
-          gap: 10px;
-          flex-wrap: nowrap;
+        /* TOP BAR */
+        .bl-topbar {
+          background: var(--bg2); border-bottom: 1px solid var(--border);
+          padding: 0 16px; display: flex; align-items: center; gap: 10px;
+          height: 54px; position: sticky; top: 0; z-index: 100;
         }
-        .bq-search input {
-          flex: 1;
-          min-width: 0; /* empêche le débordement flex */
-          background: rgba(255,255,255,0.06);
-          border: 0.5px solid rgba(255,255,255,0.1);
-          border-radius: 12px;
-          padding: 12px 16px;
-          color: #fff;
-          font-size: 14px;
-          outline: none;
-        }
-        .bq-search input::placeholder { color: rgba(255,255,255,0.3); }
-        .bq-search-btn {
-          flex-shrink: 0;
-          padding: 12px 18px;
-          background: #fb923c;
-          color: #0a1a14;
-          border-radius: 12px;
-          border: none;
-          font-size: 13px;
-          font-weight: 700;
-          cursor: pointer;
-          white-space: nowrap;
-        }
+        .bl-logo { font-size: 22px; font-weight: 900; color: var(--orange); letter-spacing: -1px; flex-shrink: 0; text-decoration: none; }
+        .bl-logo span { color: rgba(255,255,255,0.35); }
+        .bl-search-bar { flex: 1; display: flex; background: var(--bg3); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; max-width: 500px; height: 38px; }
+        .bl-search-bar form { display: flex; width: 100%; }
+        .bl-search-in { flex: 1; border: none; outline: none; padding: 0 14px; font-size: 13px; background: transparent; color: var(--text); min-width: 0; }
+        .bl-search-in::placeholder { color: var(--muted2); }
+        .bl-search-btn { padding: 0 16px; background: var(--orange); color: #fff; border: none; font-size: 14px; cursor: pointer; flex-shrink: 0; }
+        .bl-topbar-right { margin-left: auto; flex-shrink: 0; }
+        .bl-sell-btn { padding: 8px 18px; background: var(--orange); color: #fff; border-radius: 8px; font-size: 13px; font-weight: 700; text-decoration: none; }
 
-        /* CTA bouton */
-        .bq-cta-btn {
-          display: inline-block;
-          padding: 12px 22px;
-          background: #fb923c;
-          color: #0a1a14;
-          border-radius: 12px;
-          font-size: 13px;
-          font-weight: 700;
-          text-decoration: none;
-          white-space: nowrap;
-          flex-shrink: 0;
-        }
+        /* CATS */
+        .bl-cats-bar { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 0 12px; display: flex; overflow-x: auto; scrollbar-width: none; }
+        .bl-cats-bar::-webkit-scrollbar { display: none; }
+        .bl-cat-item { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 10px 16px; text-decoration: none; white-space: nowrap; font-size: 11px; font-weight: 500; color: var(--muted); border-bottom: 2px solid transparent; flex-shrink: 0; transition: color 0.15s, border-color 0.15s; }
+        .bl-cat-item.active { color: var(--orange); border-bottom-color: var(--orange); }
+        .bl-cat-item:hover { color: var(--text); }
+        .bl-cat-ico { font-size: 18px; line-height: 1; }
 
-        /* Stats */
-        .bq-stats { display: flex; gap: 20px; }
-        .bq-stat { text-align: center; }
+        /* BANNERS */
+        .bl-banners { display: flex; gap: 10px; overflow-x: auto; scrollbar-width: none; padding: 16px 12px 12px; scroll-snap-type: x mandatory; }
+        .bl-banners::-webkit-scrollbar { display: none; }
+        .bl-banner { flex-shrink: 0; width: 82vw; max-width: 320px; min-height: 128px; border-radius: 14px; padding: 20px 22px; position: relative; overflow: hidden; scroll-snap-align: start; display: flex; flex-direction: column; justify-content: space-between; }
+        .bl-banner-deco { position: absolute; right: -30px; top: -30px; width: 130px; height: 130px; border-radius: 50%; background: rgba(255,255,255,0.12); pointer-events: none; }
+        .bl-banner-tag { font-size: 10px; font-weight: 800; letter-spacing: 0.12em; color: rgba(255,255,255,0.65); margin-bottom: 4px; position: relative; z-index: 1; }
+        .bl-banner-title { font-size: 18px; font-weight: 900; color: #fff; line-height: 1.15; white-space: pre-line; position: relative; z-index: 1; }
+        .bl-banner-sub { font-size: 11px; color: rgba(255,255,255,0.6); margin-top: 4px; position: relative; z-index: 1; }
+        .bl-banner-emoji { position: absolute; right: 16px; bottom: 12px; font-size: 48px; opacity: 0.85; z-index: 1; line-height: 1; }
 
-        /* WRAP */
-        .bq-wrap { max-width: 1200px; margin: 0 auto; padding: 28px 20px 80px; }
+        /* SECTION HEADER */
+        .bl-sec { padding: 18px 12px 10px; display: flex; align-items: center; justify-content: space-between; }
+        .bl-sec-title { font-size: 15px; font-weight: 800; color: var(--text); display: flex; align-items: center; gap: 8px; }
+        .bl-sec-pill { font-size: 11px; background: rgba(255,107,0,0.15); color: var(--orange); padding: 2px 9px; border-radius: 20px; font-weight: 700; }
+        .bl-sec-all { font-size: 12px; color: var(--orange); font-weight: 600; text-decoration: none; }
 
-        /* Catégories */
-        .bq-cats { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 24px; scrollbar-width: none; }
-        .bq-cats::-webkit-scrollbar { display: none; }
-        .bq-cat {
-          padding: 8px 14px;
-          border-radius: 20px;
-          font-size: 13px;
-          font-weight: 500;
-          white-space: nowrap;
-          cursor: pointer;
-          text-decoration: none;
-          transition: all 0.15s;
-          border: 0.5px solid rgba(255,255,255,0.08);
-          background: rgba(255,255,255,0.03);
-          color: rgba(255,255,255,0.5);
-        }
-        .bq-cat.active {
-          background: rgba(34,211,165,0.12);
-          border-color: rgba(34,211,165,0.3);
-          color: #d36c22;
-          font-weight: 600;
-        }
+        /* FLASH STRIP */
+        .bl-flash-strip { display: flex; gap: 10px; overflow-x: auto; scrollbar-width: none; padding: 0 12px 16px; }
+        .bl-flash-strip::-webkit-scrollbar { display: none; }
+        .bl-flash-card { flex-shrink: 0; width: 148px; background: var(--card); border-radius: 12px; border: 1px solid var(--border); overflow: hidden; text-decoration: none; display: block; transition: transform 0.2s, border-color 0.2s; }
+        .bl-flash-card:hover { transform: translateY(-2px); border-color: var(--orange); }
+        .bl-flash-img { width: 100%; height: 115px; object-fit: cover; display: block; }
+        .bl-flash-img-ph { width: 100%; height: 115px; background: var(--bg3); display: flex; align-items: center; justify-content: center; font-size: 34px; }
+        .bl-flash-body { padding: 9px 10px 11px; }
+        .bl-flash-name { font-size: 12px; font-weight: 600; color: var(--text); margin-bottom: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .bl-flash-price { font-size: 13px; font-weight: 900; color: var(--orange); }
+        .bl-flash-old { font-size: 11px; color: var(--muted2); text-decoration: line-through; margin-left: 4px; }
+        .bl-flash-badge { display: inline-block; margin-top: 5px; font-size: 9px; font-weight: 800; padding: 2px 7px; border-radius: 20px; background: #FF3B30; color: #fff; }
 
-        /* Grille produits */
-        .bq-grid {
-          display: grid;
-          grid-template-columns: repeat(2, 1fr);
-          gap: 12px;
-        }
-        @media (min-width: 640px) { .bq-grid { grid-template-columns: repeat(3, 1fr); gap: 16px; } }
-        @media (min-width: 1024px) { .bq-grid { grid-template-columns: repeat(4, 1fr); gap: 20px; } }
+        /* MID BANNER */
+        .bl-mid-banner { margin: 4px 12px 4px; border-radius: 14px; background: linear-gradient(110deg, #FF6B00 0%, #FF9240 100%); padding: 18px 22px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+        .bl-mid-title { font-size: 15px; font-weight: 900; color: #fff; margin-bottom: 3px; }
+        .bl-mid-sub   { font-size: 12px; color: rgba(255,255,255,0.72); }
+        .bl-mid-btn   { padding: 10px 20px; background: #fff; color: var(--orange); border-radius: 8px; font-size: 13px; font-weight: 800; text-decoration: none; white-space: nowrap; flex-shrink: 0; }
 
-        /* Carte produit */
-        .bq-card {
-          background: #111827;
-          border: 0.5px solid rgba(255,255,255,0.07);
-          border-radius: 16px;
-          overflow: hidden;
-          text-decoration: none;
-          display: block;
-          transition: all 0.2s;
+        /* GRID */
+        .bl-grid-wrap { padding: 0 12px 100px; }
+        .bl-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 10px; }
+        @media (min-width:480px)  { .bl-grid { grid-template-columns: repeat(3,1fr); } }
+        @media (min-width:720px)  { .bl-grid { grid-template-columns: repeat(4,1fr); } }
+        @media (min-width:1080px) { .bl-grid { grid-template-columns: repeat(5,1fr); } }
+
+        /* CARD — calqué sur screenshot */
+        .bl-card { background: var(--card); border-radius: 12px; border: 1px solid var(--border); overflow: hidden; text-decoration: none; display: block; transition: transform 0.2s, border-color 0.2s; }
+        .bl-card:hover { transform: translateY(-3px); border-color: rgba(255,107,0,0.4); }
+
+        .bl-card-img-wrap { position: relative; aspect-ratio: 1; overflow: hidden; background: var(--bg3); }
+        .bl-card-img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.3s; }
+        .bl-card:hover .bl-card-img { transform: scale(1.05); }
+        .bl-card-ph { width: 100%; aspect-ratio: 1; background: var(--bg3); display: flex; align-items: center; justify-content: center; font-size: 40px; }
+
+        .bl-bdiscount { position: absolute; top: 8px; left: 8px; font-size: 10px; font-weight: 800; padding: 3px 8px; border-radius: 20px; background: #FF3B30; color: #fff; }
+        .bl-bdelivery { position: absolute; bottom: 8px; left: 8px; font-size: 9px; font-weight: 700; padding: 2px 7px; border-radius: 20px; background: rgba(0,200,83,0.9); color: #fff; }
+        .bl-bservice  { position: absolute; top: 8px; right: 8px; font-size: 9px; font-weight: 700; padding: 2px 7px; border-radius: 20px; background: rgba(124,58,237,0.9); color: #fff; }
+
+        .bl-card-body { padding: 10px 12px 13px; }
+        .bl-card-shop { font-size: 11px; color: var(--muted); margin-bottom: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: flex; align-items: center; justify-content: space-between; }
+        .bl-card-shop-arrow { color: var(--orange); font-size: 10px; }
+        .bl-card-name { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 6px; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .bl-card-price { font-size: 15px; font-weight: 900; color: var(--orange); }
+        .bl-card-compare { font-size: 11px; color: var(--muted2); text-decoration: line-through; margin-left: 5px; }
+        .bl-card-foot { display: flex; align-items: center; justify-content: space-between; margin-top: 7px; }
+        .bl-card-sold { font-size: 10px; color: var(--muted2); }
+        .bl-card-cart { width: 28px; height: 28px; border-radius: 8px; background: rgba(255,107,0,0.1); border: 1px solid rgba(255,107,0,0.2); display: flex; align-items: center; justify-content: center; font-size: 14px; transition: background 0.15s; }
+        .bl-card:hover .bl-card-cart { background: var(--orange); }
+
+        /* EMPTY */
+        .bl-empty { background: var(--card); border-radius: 14px; border: 1px solid var(--border); padding: 60px 20px; text-align: center; }
+
+        /* BOTTOM NAV */
+        .bl-bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--bg2); border-top: 1px solid var(--border); display: flex; z-index: 50; }
+        .bl-bnav-item { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 8px 0 6px; font-size: 10px; color: var(--muted); text-decoration: none; gap: 2px; position: relative; }
+        .bl-bnav-item.active { color: var(--orange); }
+        .bl-bnav-ico { font-size: 20px; line-height: 1; }
+        .bl-bnav-fab { width: 46px; height: 46px; border-radius: 50%; background: var(--orange); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 22px; position: absolute; top: -22px; box-shadow: 0 4px 16px rgba(255,107,0,0.5); }
+        .bl-bnav-fab-lbl { margin-top: 26px; font-size: 10px; color: var(--muted); }
+
+        @media (min-width:768px) {
+          .bl-bottom-nav { display: none; }
+          .bl-topbar { padding: 0 28px; }
+          .bl-banners .bl-banner { max-width: 360px; }
+          .bl-banners { padding: 20px 28px 14px; }
+          .bl-sec { padding: 20px 28px 10px; }
+          .bl-flash-strip { padding: 0 28px 18px; }
+          .bl-grid-wrap { padding: 0 28px 60px; }
+          .bl-mid-banner { margin: 4px 28px 4px; }
         }
-        .bq-card:hover { border-color: rgba(34,211,165,0.2); transform: translateY(-2px); }
-        .bq-img { width: 100%; aspect-ratio: 1; object-fit: cover; background: #1a2236; display: block; }
-        .bq-img-placeholder {
-          width: 100%; aspect-ratio: 1;
-          background: linear-gradient(135deg, #1a2236, #0d1520);
-          display: flex; align-items: center; justify-content: center;
-          font-size: 36px; color: rgba(255,255,255,0.1);
-        }
-        .bq-info { padding: 10px 12px 12px; }
       `}</style>
 
-      <div className="bq">
+      <div className="bl">
         <Navbar />
 
-        {/* Hero */}
-        <div className="bq-hero">
-          <div className="bq-hero-inner">
-
-            <div className="bq-hero-top">
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 11, color: '#fb923c', textTransform: 'uppercase', letterSpacing: 2, fontWeight: 600, marginBottom: 10 }}>
-                  Marketplace
-                </div>
-                <h1 style={{ fontSize: 30, fontWeight: 800, color: '#fff', letterSpacing: -1, marginBottom: 6, lineHeight: 1.2 }}>
-                  Boutique Zando CI
-                </h1>
-                <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.4)', lineHeight: 1.6 }}>
-                  Produits & services de vendeurs
-                </p>
-
-                {/* Stats + bouton CTA sur la même ligne */}
-                <div className="bq-hero-bottom-row">
-                  <div className="bq-stats">
-                    <div className="bq-stat">
-                      <p style={{ fontSize: 22, fontWeight: 800, color: '#fb923c', lineHeight: 1 }}>{totalProducts ?? 0}</p>
-                      <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', marginTop: 4 }}>Produits</p>
-                    </div>
-                    <div className="bq-stat">
-                      <p style={{ fontSize: 22, fontWeight: 800, color: '#60a5fa', lineHeight: 1 }}>{totalShops ?? 0}</p>
-                      <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', marginTop: 4 }}>Boutiques</p>
-                    </div>
-                  </div>
-                  <Link href="/creer-boutique" className="bq-cta-btn">
-                    + Ouvrir ma boutique
-                  </Link>
-                </div>
-              </div>
-            </div>
-
-            {/* Barre de recherche */}
-            <form className="bq-search" method="GET">
-              <input
-                name="q"
-                defaultValue={q}
-                placeholder="Rechercher un produit ou service..."
-              />
+        {/* TOP BAR */}
+        <div className="bl-topbar">
+          <Link href="/" className="bl-logo">zando<span>.ci</span></Link>
+          <div className="bl-search-bar">
+            <form method="GET" action="/boutique">
+              <input className="bl-search-in" name="q" defaultValue={q} placeholder="Rechercher un produit…" />
               {category !== 'all' && <input type="hidden" name="category" value={category} />}
-              {city && <input type="hidden" name="city" value={city} />}
-              <button type="submit" className="bq-search-btn">Rechercher</button>
+              <button type="submit" className="bl-search-btn">🔍</button>
             </form>
-
+          </div>
+          <div className="bl-topbar-right">
+            <Link href="/publier/boutique" className="bl-sell-btn">+ Vendre</Link>
           </div>
         </div>
 
-        <div className="bq-wrap">
-
-          {/* Catégories */}
-          <div className="bq-cats">
-            {CATEGORIES.map(c => (
-              <Link
-                key={c.value}
-                href={`/boutique?category=${c.value}${city ? `&city=${city}` : ''}${q ? `&q=${q}` : ''}`}
-                className={`bq-cat${category === c.value ? ' active' : ''}`}
-              >
-                {c.icon} {c.label}
-              </Link>
-            ))}
-          </div>
-
-          {/* Résultats */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 8 }}>
-            <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)' }}>
-              {products.length} produit{products.length > 1 ? 's' : ''}
-              {category !== 'all' ? ` · ${CATEGORIES.find(c => c.value === category)?.label}` : ''}
-              {q ? ` · "${q}"` : ''}
-            </p>
-            <Link href="/boutique/mes-boutiques" style={{ fontSize: 13, color: '#fb923c', textDecoration: 'none' }}>
-              Voir toutes les boutiques →
+        {/* CATS */}
+        <div className="bl-cats-bar">
+          {CATEGORIES.map(c => (
+            <Link key={c.value} href={`/boutique?category=${c.value}${q ? `&q=${encodeURIComponent(q)}` : ''}`} className={`bl-cat-item${category === c.value ? ' active' : ''}`}>
+              <span className="bl-cat-ico">{c.emoji}</span>
+              {c.label}
             </Link>
-          </div>
+          ))}
+        </div>
 
-          {/* Grille produits */}
+        {/* BANNERS */}
+        {!q && category === 'all' && (
+          <div className="bl-banners">
+            {BANNERS.map((b, i) => (
+              <div key={i} className="bl-banner" style={{ background: b.bg }}>
+                <div className="bl-banner-deco" />
+                <div>
+                  <div className="bl-banner-tag">{b.label}</div>
+                  <div className="bl-banner-title">{b.title}</div>
+                  <div className="bl-banner-sub">{b.sub}</div>
+                </div>
+                <div className="bl-banner-emoji">{b.emoji}</div>
+              </div>
+            ))}
+            <div className="bl-banner" style={{ background: 'var(--bg3)', border: '1px solid var(--border)', minWidth: 170, maxWidth: 200 }}>
+              <div style={{ fontSize: 10, color: 'var(--muted)', fontWeight: 700, letterSpacing: '0.1em', marginBottom: 14 }}>MARKETPLACE</div>
+              <div>
+                <div style={{ fontSize: 28, fontWeight: 900, color: 'var(--text)', lineHeight: 1 }}>{totalProducts ?? 0}</div>
+                <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 2, marginBottom: 12 }}>produits actifs</div>
+                <div style={{ fontSize: 28, fontWeight: 900, color: 'var(--orange)', lineHeight: 1 }}>{totalShops ?? 0}</div>
+                <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>boutiques</div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* FLASH SALES */}
+        {!q && flash.length > 0 && (
+          <>
+            <div className="bl-sec">
+              <div className="bl-sec-title">⚡ Ventes flash <span className="bl-sec-pill">{flash.length}</span></div>
+              <Link href="/boutique" className="bl-sec-all">Voir tout →</Link>
+            </div>
+            <div className="bl-flash-strip">
+              {flash.map((p: any) => {
+                const discount = Math.round((1 - p.price / p.compare_price) * 100)
+                const photo    = p.photos?.[0] || p.main_photo
+                return (
+                  <Link key={p.id} href={`/boutique/produit/${p.id}`} className="bl-flash-card">
+                    {photo ? <img src={photo} alt={p.name} className="bl-flash-img" /> : <div className="bl-flash-img-ph">📦</div>}
+                    <div className="bl-flash-body">
+                      <div className="bl-flash-name">{p.name}</div>
+                      <span className="bl-flash-price">{formatPrice(p.price)}</span>
+                      <span className="bl-flash-old">{formatPrice(p.compare_price)}</span>
+                      <div><span className="bl-flash-badge">-{discount}%</span></div>
+                    </div>
+                  </Link>
+                )
+              })}
+            </div>
+          </>
+        )}
+
+        {/* MID PROMO */}
+        {!q && category === 'all' && (
+          <div className="bl-mid-banner">
+            <div>
+              <div className="bl-mid-title">🏪 Ouvrez votre boutique</div>
+              <div className="bl-mid-sub">Rejoignez {totalShops ?? 0}+ vendeurs — gratuit</div>
+            </div>
+            <Link href="/publier/boutique" className="bl-mid-btn">Commencer</Link>
+          </div>
+        )}
+
+        {/* PRODUITS */}
+        <div className="bl-sec">
+          <div className="bl-sec-title">
+            {q ? `🔍 "${q}"` : category !== 'all' ? `${CATEGORIES.find(c => c.value === category)?.emoji} ${CATEGORIES.find(c => c.value === category)?.label}` : '🛍️ Tous les produits'}
+            <span className="bl-sec-pill">{products.length}</span>
+          </div>
+        </div>
+
+        <div className="bl-grid-wrap">
           {products.length > 0 ? (
-            <div className="bq-grid">
-              {products.map((p: any) => (
-                <Link key={p.id} href={`/boutique/produit/${p.id}`} className="bq-card">
-                  {p.photos?.[0] || p.main_photo ? (
-                    <img src={p.photos?.[0] || p.main_photo} alt={p.name} className="bq-img" />
-                  ) : (
-                    <div className="bq-img-placeholder">📦</div>
-                  )}
-                  <div className="bq-info">
-                    <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginBottom: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {(p.shops as any)?.name ?? 'Boutique'}
-                    </p>
-                    <p style={{ fontSize: 13, fontWeight: 600, color: '#fff', marginBottom: 6, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {p.name}
-                    </p>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 4 }}>
-                      <span style={{ fontSize: 14, fontWeight: 800, color: '#fb923c' }}>{formatPrice(p.price)}</span>
-                      <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                        {p.type === 'service' && (
-                          <span style={{ fontSize: 9, fontWeight: 700, padding: '2px 6px', borderRadius: 20, background: 'rgba(167,139,250,0.15)', color: '#a78bfa' }}>SERVICE</span>
-                        )}
-                        {p.delivery_available && p.type === 'physical' && (
-                          <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.3)' }}>🚚</span>
-                        )}
+            <div className="bl-grid">
+              {products.map((p: any) => {
+                const hasDiscount = p.compare_price && p.compare_price > p.price
+                const discount    = hasDiscount ? Math.round((1 - p.price / p.compare_price) * 100) : 0
+                const photo       = p.photos?.[0] || p.main_photo
+                const isService   = p.type === 'service'
+                return (
+                  <Link key={p.id} href={`/boutique/produit/${p.id}`} className="bl-card">
+                    <div className="bl-card-img-wrap">
+                      {photo ? <img src={photo} alt={p.name} className="bl-card-img" /> : <div className="bl-card-ph">📦</div>}
+                      {hasDiscount && <span className="bl-bdiscount">-{discount}%</span>}
+                      {p.delivery_available && !isService && <span className="bl-bdelivery">🚚 Livraison</span>}
+                      {isService && <span className="bl-bservice">SERVICE</span>}
+                    </div>
+                    <div className="bl-card-body">
+                      <div className="bl-card-shop">
+                        {(p.shops as any)?.name ?? 'Boutique'}
+                        <span className="bl-card-shop-arrow">✦</span>
+                      </div>
+                      <div className="bl-card-name">{p.name}</div>
+                      <div>
+                        <span className="bl-card-price">{formatPrice(p.price)}</span>
+                        {hasDiscount && <span className="bl-card-compare">{formatPrice(p.compare_price)}</span>}
+                      </div>
+                      <div className="bl-card-foot">
+                        <span className="bl-card-sold">{p.sales_count > 0 ? `${p.sales_count} vendus` : ''}</span>
+                        <div className="bl-card-cart">🛒</div>
                       </div>
                     </div>
-                    {p.compare_price && p.compare_price > p.price && (
-                      <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)', textDecoration: 'line-through', marginTop: 2 }}>
-                        {formatPrice(p.compare_price)}
-                      </p>
-                    )}
-                  </div>
-                </Link>
-              ))}
+                  </Link>
+                )
+              })}
             </div>
           ) : (
-            <div style={{ textAlign: 'center', padding: '80px 20px' }}>
-              <div style={{ fontSize: 48, marginBottom: 16, opacity: 0.2 }}>📦</div>
-              <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.4)', marginBottom: 8 }}>Aucun produit trouvé</p>
-              <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.2)' }}>Soyez le premier à vendre sur Zando CI</p>
-              <Link href="/creer-boutique" style={{
-                display: 'inline-block', marginTop: 20, padding: '12px 24px',
-                background: '#fb923c', color: '#0a1a14', borderRadius: 12,
-                fontSize: 14, fontWeight: 700, textDecoration: 'none',
-              }}>Ouvrir ma boutique</Link>
+            <div className="bl-empty">
+              <div style={{ fontSize: 48, marginBottom: 14 }}>📦</div>
+              <p style={{ fontSize: 16, fontWeight: 800, color: 'var(--text)', marginBottom: 8 }}>Aucun produit trouvé</p>
+              <p style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 24 }}>Soyez le premier à vendre sur ZandoCI</p>
+              <Link href="/publier/boutique" style={{ display: 'inline-block', padding: '12px 28px', background: 'var(--orange)', color: '#fff', borderRadius: 8, fontSize: 14, fontWeight: 800, textDecoration: 'none' }}>
+                Ouvrir ma boutique →
+              </Link>
             </div>
           )}
         </div>
+
+        {/* BOTTOM NAV */}
+        <nav className="bl-bottom-nav">
+          <Link href="/boutique" className={`bl-bnav-item${!q && category === 'all' ? ' active' : ''}`}>
+            <span className="bl-bnav-ico">🏠</span>Accueil
+          </Link>
+          <Link href="/boutique?category=mode" className={`bl-bnav-item${category === 'mode' ? ' active' : ''}`}>
+            <span className="bl-bnav-ico">👗</span>Mode
+          </Link>
+          <Link href="/boutique" className="bl-bnav-item">
+            <div className="bl-bnav-fab">🛍️</div>
+            <span className="bl-bnav-fab-lbl">Boutique</span>
+          </Link>
+          <Link href="/boutique?category=electronique" className={`bl-bnav-item${category === 'electronique' ? ' active' : ''}`}>
+            <span className="bl-bnav-ico">📱</span>Tech
+          </Link>
+          <Link href="/publier/boutique" className="bl-bnav-item">
+            <span className="bl-bnav-ico">➕</span>Vendre
+          </Link>
+        </nav>
       </div>
     </>
   )
