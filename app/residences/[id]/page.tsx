@@ -59,104 +59,284 @@ export default async function ResidenceDetailPage({ params }: { params: Promise<
     gardien: '💂', générateur: '⚡', eau_chaude: '🚿', balcon: '🌿',
   }
 
+  const ownerName = (residence.profiles as any)?.full_name ?? ''
+  const ownerCity = (residence.profiles as any)?.city ?? ''
+
   return (
     <>
       <style>{`
-        .rd-content { max-width: 1200px; margin: 0 auto; padding: 0 24px 80px; }
-        .rd-grid { display: grid; grid-template-columns: 1fr 380px; gap: 48px; margin-top: -60px; position: relative; z-index: 10; }
-        .rd-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 32px; }
-        .rd-booking { position: sticky; top: 24px; align-self: start; }
-
-        @media (max-width: 767px) {
-          .rd-content { padding: 0 16px 60px; }
-          .rd-grid { grid-template-columns: 1fr; margin-top: 0; gap: 24px; }
-          .rd-stats { grid-template-columns: repeat(2, 1fr); }
-          .rd-booking { position: static; }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        :root {
+          --bg:      #0E0E12;
+          --bg2:     #16161C;
+          --bg3:     #1E1E26;
+          --card:    #1A1A22;
+          --border:  rgba(255,255,255,0.07);
+          --teal:    #22D3A5;
+          --text:    #F0F0F0;
+          --muted:   #888;
+          --muted2:  #444;
         }
 
+        .rd { background: var(--bg); min-height: 100vh; color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; }
+
+        /* ── BREADCRUMB ── */
+        .rd-bc {
+          max-width: 1200px; margin: 0 auto;
+          padding: 14px 24px; display: flex; align-items: center; gap: 6px;
+          border-bottom: 1px solid var(--border);
+        }
+        .rd-bc-link { font-size: 12px; color: var(--muted); text-decoration: none; }
+        .rd-bc-link:hover { color: var(--teal); }
+        .rd-bc-sep { font-size: 12px; color: var(--muted2); }
+        .rd-bc-cur { font-size: 12px; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 200px; }
+
+        /* ── MAIN LAYOUT ── */
+        .rd-content { max-width: 1200px; margin: 0 auto; padding: 32px 24px 100px; }
+        .rd-grid {
+          display: grid;
+          grid-template-columns: 1fr 380px;
+          gap: 40px;
+          align-items: flex-start;
+        }
+
+        /* ── LEFT COLUMN ── */
+        .rd-left {}
+
+        /* Header */
+        .rd-header { margin-bottom: 28px; }
+        .rd-type-badge {
+          display: inline-flex; align-items: center; gap: 5px;
+          font-size: 11px; font-weight: 700; color: var(--teal);
+          text-transform: uppercase; letter-spacing: 0.12em;
+          background: rgba(34,211,165,0.08); border: 1px solid rgba(34,211,165,0.2);
+          padding: 3px 10px; border-radius: 20px; margin-bottom: 12px;
+        }
+        .rd-title { font-size: clamp(22px, 3vw, 30px); font-weight: 900; color: var(--text); letter-spacing: -0.5px; line-height: 1.2; margin-bottom: 8px; }
+        .rd-location { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 5px; }
+
+        /* Stats strip */
+        .rd-stats {
+          display: grid; grid-template-columns: repeat(4, 1fr);
+          gap: 10px; margin-bottom: 32px;
+        }
+        .rd-stat {
+          background: var(--card); border: 1px solid var(--border);
+          border-radius: 12px; padding: 16px 10px; text-align: center;
+          transition: border-color 0.2s;
+        }
+        .rd-stat:hover { border-color: rgba(34,211,165,0.25); }
+        .rd-stat-ico   { font-size: 22px; margin-bottom: 6px; line-height: 1; }
+        .rd-stat-val   { font-size: 18px; font-weight: 900; color: var(--teal); line-height: 1; }
+        .rd-stat-label { font-size: 11px; color: var(--muted); margin-top: 4px; }
+
+        /* Sections */
+        .rd-section { margin-bottom: 32px; }
+        .rd-section-title {
+          font-size: 11px; font-weight: 700; color: var(--muted);
+          text-transform: uppercase; letter-spacing: 0.12em;
+          margin-bottom: 14px; display: flex; align-items: center; gap: 8px;
+        }
+        .rd-section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+        /* Description */
+        .rd-desc { font-size: 14px; color: var(--muted); line-height: 1.8; }
+
+        /* Équipements */
+        .rd-amenities { display: flex; flex-wrap: wrap; gap: 8px; }
+        .rd-amenity {
+          display: inline-flex; align-items: center; gap: 6px;
+          background: rgba(34,211,165,0.06); border: 1px solid rgba(34,211,165,0.18);
+          color: var(--teal); padding: 7px 14px; border-radius: 8px; font-size: 13px;
+          transition: background 0.15s;
+        }
+        .rd-amenity:hover { background: rgba(34,211,165,0.12); }
+
+        /* Tarifs */
+        .rd-price-card {
+          background: var(--card); border: 1px solid var(--border);
+          border-radius: 12px; overflow: hidden;
+        }
+        .rd-price-row {
+          display: flex; justify-content: space-between; align-items: center;
+          padding: 14px 18px; border-bottom: 1px solid var(--border);
+        }
+        .rd-price-row:last-child { border-bottom: none; }
+        .rd-price-label { font-size: 13px; color: var(--muted); }
+        .rd-price-val   { font-size: 18px; font-weight: 900; color: var(--teal); }
+
+        /* Propriétaire */
+        .rd-owner-card {
+          background: var(--card); border: 1px solid var(--border);
+          border-radius: 12px; padding: 18px;
+          display: flex; align-items: center; gap: 14px;
+          transition: border-color 0.2s;
+        }
+        .rd-owner-card:hover { border-color: rgba(34,211,165,0.25); }
+        .rd-owner-avatar {
+          width: 52px; height: 52px; border-radius: 50%; flex-shrink: 0;
+          background: linear-gradient(135deg, #22D3A5, #0891b2);
+          display: flex; align-items: center; justify-content: center;
+          font-size: 20px; font-weight: 900; color: #0a0f1a;
+        }
+        .rd-owner-name { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 3px; }
+        .rd-owner-city { font-size: 12px; color: var(--muted); }
+        .rd-owner-badge {
+          margin-left: auto; padding: 4px 10px; border-radius: 20px;
+          font-size: 10px; font-weight: 700;
+          background: rgba(34,211,165,0.08); border: 1px solid rgba(34,211,165,0.2);
+          color: var(--teal);
+        }
+
+        /* ── RIGHT COLUMN (booking) ── */
+        .rd-booking-col { position: sticky; top: 24px; }
+
+        /* ── BOTTOM BAR mobile ── */
+        .rd-bottom-bar {
+          position: fixed; bottom: 0; left: 0; right: 0;
+          background: var(--bg2); border-top: 1px solid var(--border);
+          padding: 10px 16px; display: none;
+          align-items: center; justify-content: space-between; gap: 12px;
+          z-index: 50;
+        }
+        .rd-bottom-price { font-size: 18px; font-weight: 900; color: var(--teal); }
+        .rd-bottom-price small { display: block; font-size: 11px; color: var(--muted); font-weight: 400; }
+        .rd-bottom-btn {
+          padding: 13px 28px; background: var(--teal); color: #0E0E12;
+          border: none; border-radius: 10px; font-size: 14px; font-weight: 800;
+          cursor: pointer; white-space: nowrap;
+        }
+
+        /* ── RESPONSIVE ── */
+        @media (max-width: 767px) {
+          .rd-bc { padding: 12px 16px; }
+          .rd-content { padding: 20px 16px 90px; }
+          .rd-grid { grid-template-columns: 1fr; gap: 24px; }
+          .rd-stats { grid-template-columns: repeat(2, 1fr); }
+          .rd-booking-col { position: static; }
+          .rd-bottom-bar { display: flex; }
+        }
         @media (min-width: 768px) and (max-width: 1023px) {
           .rd-grid { grid-template-columns: 1fr; }
-          .rd-booking { position: static; }
+          .rd-booking-col { position: static; }
         }
       `}</style>
 
-      <Navbar />
+      <div className="rd">
+        <Navbar />
 
-      <div style={{ background: '#0a0f1a', minHeight: '100vh', color: '#e2e8f0' }}>
-
+        {/* ── GALERIE ── */}
         {photos.length > 0 && (
           <PhotoGallery photos={photos} title={residence.title} accent="#22d3a5" />
         )}
 
+        {/* ── BREADCRUMB ── */}
+        <div className="rd-bc">
+          <a href="/residences" className="rd-bc-link">Résidences</a>
+          <span className="rd-bc-sep">›</span>
+          <a href={`/residences?city=${residence.city}`} className="rd-bc-link">{residence.city}</a>
+          <span className="rd-bc-sep">›</span>
+          <span className="rd-bc-cur">{residence.title}</span>
+        </div>
+
         <div className="rd-content">
           <div className="rd-grid">
 
-            <div>
-              <div style={{ marginBottom: 32, paddingTop: 16 }}>
-                <h1 style={{ fontSize: 32, fontWeight: 700, color: '#f1f5f9', lineHeight: 1.2, marginBottom: 8 }}>{residence.title}</h1>
-                <p style={{ color: '#64748b', fontSize: 14 }}>{residence.address && `${residence.address}, `}{residence.city}</p>
+            {/* ── COLONNE GAUCHE ── */}
+            <div className="rd-left">
+
+              {/* Header */}
+              <div className="rd-header">
+                <div className="rd-type-badge">🏡 {residence.type ?? 'Résidence'}</div>
+                <h1 className="rd-title">{residence.title}</h1>
+                <div className="rd-location">
+                  <span>📍</span>
+                  {residence.address && `${residence.address}, `}{residence.city}
+                </div>
               </div>
 
+              {/* Stats */}
               <div className="rd-stats">
                 {[
-                  { icon: '🛏️', value: `${residence.bedrooms}`, label: 'Chambres' },
-                  { icon: '🚿', value: `${residence.bathrooms}`, label: 'SDB' },
-                  { icon: '👥', value: `${residence.max_guests}`, label: 'Personnes max' },
+                  { icon: '🛏️', value: String(residence.bedrooms),  label: 'Chambres' },
+                  { icon: '🚿', value: String(residence.bathrooms), label: 'Salles de bain' },
+                  { icon: '👥', value: String(residence.max_guests), label: 'Personnes max' },
                   { icon: '📐', value: (residence as any).surface ? `${(residence as any).surface}m²` : '—', label: 'Surface' },
                 ].map((s, i) => (
-                  <div key={i} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, padding: '16px 12px', textAlign: 'center' }}>
-                    <div style={{ fontSize: 22, marginBottom: 6 }}>{s.icon}</div>
-                    <div style={{ fontSize: 18, fontWeight: 700, color: '#22d3a5' }}>{s.value}</div>
-                    <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>{s.label}</div>
+                  <div key={i} className="rd-stat">
+                    <div className="rd-stat-ico">{s.icon}</div>
+                    <div className="rd-stat-val">{s.value}</div>
+                    <div className="rd-stat-label">{s.label}</div>
                   </div>
                 ))}
               </div>
 
+              {/* Description */}
               {residence.description && (
-                <div style={{ marginBottom: 32 }}>
-                  <h2 style={{ fontSize: 11, fontWeight: 600, color: '#cbd5e1', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Description</h2>
-                  <p style={{ color: '#94a3b8', lineHeight: 1.8, fontSize: 15 }}>{residence.description}</p>
+                <div className="rd-section">
+                  <div className="rd-section-title">Description</div>
+                  <p className="rd-desc">{residence.description}</p>
                 </div>
               )}
 
+              {/* Équipements */}
               {amenities.length > 0 && (
-                <div style={{ marginBottom: 32 }}>
-                  <h2 style={{ fontSize: 11, fontWeight: 600, color: '#cbd5e1', marginBottom: 16, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Équipements</h2>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
-                    {amenities.map((a) => (
-                      <span key={a} style={{ background: 'rgba(34,211,165,0.08)', border: '1px solid rgba(34,211,165,0.2)', color: '#22d3a5', padding: '6px 14px', borderRadius: 8, fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <span>{AMENITY_ICONS[a] ?? '✓'}</span> {a.replace(/_/g, ' ')}
+                <div className="rd-section">
+                  <div className="rd-section-title">Équipements</div>
+                  <div className="rd-amenities">
+                    {amenities.map(a => (
+                      <span key={a} className="rd-amenity">
+                        {AMENITY_ICONS[a] ?? '✓'} {a.replace(/_/g, ' ')}
                       </span>
                     ))}
                   </div>
                 </div>
               )}
 
-              <div style={{ marginBottom: 32 }}>
-                <h2 style={{ fontSize: 11, fontWeight: 600, color: '#cbd5e1', marginBottom: 16, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Tarifs</h2>
-                <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 16, overflow: 'hidden' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 20px' }}>
-                    <span style={{ color: '#64748b', fontSize: 14 }}>Prix par nuit</span>
-                    <span style={{ color: '#22d3a5', fontWeight: 600, fontSize: 18 }}>{formatPrice(residence.price_per_night)}</span>
+              {/* Tarifs */}
+              <div className="rd-section">
+                <div className="rd-section-title">Tarifs</div>
+                <div className="rd-price-card">
+                  <div className="rd-price-row">
+                    <span className="rd-price-label">Prix par nuit</span>
+                    <span className="rd-price-val">{formatPrice(residence.price_per_night)}</span>
                   </div>
+                  {(residence as any).price_per_week && (
+                    <div className="rd-price-row">
+                      <span className="rd-price-label">Prix par semaine</span>
+                      <span className="rd-price-val">{formatPrice((residence as any).price_per_week)}</span>
+                    </div>
+                  )}
+                  {(residence as any).price_per_month && (
+                    <div className="rd-price-row">
+                      <span className="rd-price-label">Prix par mois</span>
+                      <span className="rd-price-val">{formatPrice((residence as any).price_per_month)}</span>
+                    </div>
+                  )}
                 </div>
               </div>
 
-              <div>
-                <h2 style={{ fontSize: 11, fontWeight: 600, color: '#cbd5e1', marginBottom: 16, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Propriétaire</h2>
-                <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 16, padding: '20px', display: 'flex', alignItems: 'center', gap: 16 }}>
-                  <div style={{ width: 52, height: 52, borderRadius: '50%', background: 'linear-gradient(135deg, #22d3a5, #0891b2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, fontWeight: 700, color: '#0a0f1a', flexShrink: 0 }}>
-                    {(residence.profiles as { full_name: string })?.full_name?.charAt(0)?.toUpperCase() ?? '?'}
-                  </div>
-                  <div>
-                    <p style={{ color: '#e2e8f0', fontWeight: 600, marginBottom: 2 }}>{(residence.profiles as { full_name: string })?.full_name}</p>
-                    <p style={{ color: '#64748b', fontSize: 13 }}>📍 {(residence.profiles as { city: string })?.city}</p>
+              {/* Propriétaire */}
+              {ownerName && (
+                <div className="rd-section">
+                  <div className="rd-section-title">Propriétaire</div>
+                  <div className="rd-owner-card">
+                    <div className="rd-owner-avatar">
+                      {ownerName.charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                      <div className="rd-owner-name">{ownerName}</div>
+                      {ownerCity && <div className="rd-owner-city">📍 {ownerCity}</div>}
+                    </div>
+                    <span className="rd-owner-badge">✓ Vérifié</span>
                   </div>
                 </div>
-              </div>
+              )}
+
             </div>
 
-            <div className="rd-booking">
+            {/* ── COLONNE DROITE (réservation) ── */}
+            <div className="rd-booking-col">
               <BookingFormResidence
                 residenceId={residence.id}
                 pricePerNight={residence.price_per_night}
@@ -165,6 +345,15 @@ export default async function ResidenceDetailPage({ params }: { params: Promise<
             </div>
 
           </div>
+        </div>
+
+        {/* ── BOTTOM BAR mobile ── */}
+        <div className="rd-bottom-bar">
+          <div className="rd-bottom-price">
+            {formatPrice(residence.price_per_night)}
+            <small>par nuit</small>
+          </div>
+          <button className="rd-bottom-btn">Réserver →</button>
         </div>
       </div>
     </>

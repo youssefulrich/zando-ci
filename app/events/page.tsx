@@ -44,8 +44,8 @@ export default async function EventsPage({
   function getBadge(e: { tickets_sold: number; total_capacity: number; event_date: string }) {
     const remaining = e.total_capacity - e.tickets_sold
     const daysLeft  = Math.ceil((new Date(e.event_date).getTime() - Date.now()) / 86400000)
-    if (remaining === 0) return { label: 'Complet',         bg: 'rgba(239,68,68,0.15)',    color: '#f87171' }
-    if (daysLeft <= 7)   return { label: 'Bientôt !',       bg: 'rgba(251,191,36,0.15)',   color: '#fbbf24' }
+    if (remaining === 0) return { label: 'Complet',          bg: 'rgba(239,68,68,0.15)',    color: '#f87171' }
+    if (daysLeft <= 7)   return { label: 'Bientôt !',        bg: 'rgba(251,191,36,0.15)',   color: '#fbbf24' }
     return                      { label: `${remaining} billets`, bg: 'rgba(167,139,250,0.15)', color: '#a78bfa' }
   }
 
@@ -59,7 +59,6 @@ export default async function EventsPage({
           --bg3:     #1E1E26;
           --card:    #1A1A22;
           --border:  rgba(255,255,255,0.07);
-          --orange:  #FF6B00;
           --purple:  #A78BFA;
           --purpled: #1A0A3D;
           --text:    #F0F0F0;
@@ -68,19 +67,6 @@ export default async function EventsPage({
         }
 
         .ev { background: var(--bg); min-height: 100vh; color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; }
-
-        /* ── TOP BAR ── */
-        .ev-topbar {
-          background: var(--bg2); border-bottom: 1px solid var(--border);
-          padding: 0 16px; display: flex; align-items: center; gap: 10px;
-          height: 54px; position: sticky; top: 0; z-index: 100;
-        }
-        .ev-logo { font-size: 22px; font-weight: 900; color: var(--orange); letter-spacing: -1px; flex-shrink: 0; text-decoration: none; }
-        .ev-logo span { color: rgba(255,255,255,0.35); }
-        .ev-topbar-sep { color: var(--muted2); font-size: 18px; }
-        .ev-topbar-section { font-size: 14px; font-weight: 700; color: var(--text); }
-        .ev-topbar-right { margin-left: auto; }
-        .ev-topbar-btn { padding: 8px 18px; background: var(--purple); color: var(--purpled); border-radius: 8px; font-size: 13px; font-weight: 800; text-decoration: none; }
 
         /* ── CATS TABS ── */
         .ev-tabs-bar {
@@ -110,11 +96,6 @@ export default async function EventsPage({
           pointer-events: none;
         }
         .ev-hero-inner { max-width: 1100px; margin: 0 auto; position: relative; z-index: 1; }
-        .ev-bc { display: flex; align-items: center; gap: 6px; margin-bottom: 16px; }
-        .ev-bc-link { font-size: 12px; color: var(--muted); text-decoration: none; }
-        .ev-bc-link:hover { color: var(--text); }
-        .ev-bc-sep { font-size: 12px; color: var(--muted2); }
-        .ev-bc-cur { font-size: 12px; color: var(--text); }
         .ev-hero-tag {
           display: inline-flex; align-items: center; gap: 6px;
           font-size: 11px; font-weight: 700; color: var(--purple);
@@ -140,7 +121,7 @@ export default async function EventsPage({
         /* ── SIDEBAR ── */
         .ev-sidebar { width: 220px; flex-shrink: 0; position: sticky; top: 70px; }
         .ev-sidebar-box { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 20px; }
-        .ev-sidebar-title { font-size: 13px; font-weight: 800; color: var(--text); margin-bottom: 18px; display: flex; align-items: center; gap: 7px; }
+        .ev-sidebar-title { font-size: 13px; font-weight: 800; color: var(--text); margin-bottom: 18px; }
         .ev-field { margin-bottom: 16px; }
         .ev-label { display: block; font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 7px; }
         .ev-select, .ev-input {
@@ -187,14 +168,9 @@ export default async function EventsPage({
         }
         .ev-badge-status {
           position: absolute; top: 10px; right: 10px; z-index: 2;
-          padding: 3px 10px; border-radius: 20px; font-size: 10px; font-weight: 700;
-          border: 1px solid;
+          padding: 3px 10px; border-radius: 20px; font-size: 10px; font-weight: 700; border: 1px solid;
         }
-        .ev-card-date {
-          position: absolute; bottom: 10px; left: 12px; z-index: 2;
-          font-size: 11px; color: rgba(255,255,255,0.8);
-          display: flex; align-items: center; gap: 4px;
-        }
+        .ev-card-date { position: absolute; bottom: 10px; left: 12px; z-index: 2; font-size: 11px; color: rgba(255,255,255,0.8); }
 
         .ev-card-body { padding: 14px; }
         .ev-card-title { font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -233,25 +209,14 @@ export default async function EventsPage({
         }
         @media (min-width: 768px) {
           .ev-bottom-nav { display: none; }
-          .ev-topbar { padding: 0 28px; }
+          .ev-tabs-bar { padding: 0 28px; }
           .ev-hero { padding: 32px 28px 24px; }
           .ev-body { padding: 28px 28px 60px; }
-          .ev-tabs-bar { padding: 0 28px; }
         }
       `}</style>
 
       <div className="ev">
         <Navbar />
-
-        {/* ── TOP BAR ── */}
-        <div className="ev-topbar">
-          <Link href="/" className="ev-logo">zando<span>.ci</span></Link>
-          <span className="ev-topbar-sep">/</span>
-          <span className="ev-topbar-section">Événements</span>
-          <div className="ev-topbar-right">
-            <Link href="/publier/event" className="ev-topbar-btn">+ Publier</Link>
-          </div>
-        </div>
 
         {/* ── TABS CATÉGORIES ── */}
         <div className="ev-tabs-bar">
@@ -272,17 +237,11 @@ export default async function EventsPage({
         {/* ── HERO ── */}
         <div className="ev-hero">
           <div className="ev-hero-inner">
-            <div className="ev-bc">
-              <Link href="/" className="ev-bc-link">Accueil</Link>
-              <span className="ev-bc-sep">›</span>
-              <span className="ev-bc-cur">Événements</span>
-            </div>
             <div className="ev-hero-tag">Découvrir</div>
             <h1 className="ev-hero-h1">Événements à venir</h1>
             <p className="ev-hero-count">
               <strong>{count ?? 0}</strong> événement{(count ?? 0) > 1 ? 's' : ''} en Côte d&apos;Ivoire
             </p>
-
             {(params.category || params.city || params.date) && (
               <div className="ev-active-filters">
                 {params.category && <span className="ev-filter-badge">{CATEGORIES.find(c => c.value === params.category)?.emoji} {CATEGORIES.find(c => c.value === params.category)?.label}</span>}
@@ -309,20 +268,14 @@ export default async function EventsPage({
                       {CITIES.map(c => <option key={c} value={c}>{c}</option>)}
                     </select>
                   </div>
-
                   <div className="ev-field">
                     <label className="ev-label">Date</label>
-                    <input
-                      type="date" name="date"
-                      defaultValue={params.date ?? ''} min={today}
-                      className="ev-input"
-                    />
+                    <input type="date" name="date" defaultValue={params.date ?? ''} min={today} className="ev-input" />
                   </div>
-
                   {params.category && <input type="hidden" name="category" value={params.category} />}
                   <div className="ev-divider" />
                   <button type="submit" className="ev-apply">Appliquer</button>
-                  <Link href="/events" className="ev-reset">Réinitialiser les filtres</Link>
+                  <Link href="/events" className="ev-reset">Réinitialiser</Link>
                 </form>
               </div>
             </aside>
@@ -348,10 +301,7 @@ export default async function EventsPage({
                               : <div className="ev-card-ph">◉</div>
                             }
                             <span className="ev-badge-cat">{e.category}</span>
-                            <span
-                              className="ev-badge-status"
-                              style={{ background: badge.bg, color: badge.color, borderColor: badge.color + '40' }}
-                            >
+                            <span className="ev-badge-status" style={{ background: badge.bg, color: badge.color, borderColor: badge.color + '40' }}>
                               {badge.label}
                             </span>
                             <div className="ev-card-date">📅 {formatDate(e.event_date)}</div>
