@@ -33,6 +33,82 @@ const SLIDES = [
   },
 ]
 
+function ServiceClient() {
+  const [openFaq, setOpenFaq] = useState<number | null>(null)
+
+  const faqs = [
+    { q: 'Comment annuler une réservation ?', a: "Rendez-vous dans votre espace personnel → Mes réservations, sélectionnez la réservation concernée et cliquez sur « Annuler ». Le remboursement est traité sous 24–48h sur votre Mobile Money." },
+    { q: 'Mon paiement Mobile Money a échoué, que faire ?', a: "Vérifiez que votre solde est suffisant et que le numéro saisi est correct. Si le problème persiste, contactez-nous sur WhatsApp avec votre numéro de transaction." },
+    { q: 'Comment devenir vendeur / bailleur sur ZandoCI ?', a: "Créez un compte gratuit, accédez à votre espace et cliquez sur « Publier une annonce ». Votre annonce est en ligne en moins de 5 minutes après validation." },
+    { q: 'Les paiements sont-ils sécurisés ?', a: "Oui. Tous les paiements transitent par les opérateurs officiels (Orange, MTN, Wave, Moov). ZandoCI ne stocke aucun code secret ou PIN." },
+  ]
+
+  return (
+    <section className="support">
+      <div className="sec-label">Support</div>
+      <h2 className="sec-title">Service client</h2>
+
+      <div className="support-grid">
+        {/* Bloc principal contact */}
+        <div className="support-hero">
+          <div className="support-hero-text">
+            <h3>Une question ?<br />On est là pour vous.</h3>
+            <p>Notre équipe basée à Abidjan vous répond 7j/7 de 8h à 22h. Choisissez le canal qui vous convient.</p>
+            <div className="support-channels">
+              <a href="https://wa.me/2250160429781" target="_blank" rel="noopener noreferrer" className="sup-ch sup-ch-wa">
+                <span>💬</span> WhatsApp
+              </a>
+              <a href="https://t.me/+2250160429781" target="_blank" rel="noopener noreferrer" className="sup-ch sup-ch-tg">
+                <span>✈️</span> Telegram
+              </a>
+              <a href="tel:+2250160429781" className="sup-ch sup-ch-mail">
+                <span>📞</span> 0160429781
+              </a>
+            </div>
+          </div>
+          <div className="support-badge">
+            <span className="support-badge-emoji">🛟</span>
+            <span className="support-badge-label">7j/7<br />8h–22h</span>
+          </div>
+        </div>
+
+        {/* 4 mini cartes */}
+        {[
+          { icon: '⚡', title: 'Réponse rapide', desc: "Délai moyen de réponse inférieur à 15 minutes via WhatsApp ou Telegram.", badge: 'badge-green', blabel: '< 15 min' },
+          { icon: '🔐', title: 'Paiements sécurisés', desc: "Toutes les transactions passent par les opérateurs officiels. Votre argent est protégé.", badge: 'badge-blue', blabel: '100% sécurisé' },
+          { icon: '🔄', title: 'Remboursements', desc: "En cas d'annulation éligible, votre remboursement arrive sur votre Mobile Money sous 48h.", badge: 'badge-orange', blabel: 'Sous 48h' },
+          { icon: '🌍', title: 'Support en français', desc: "Toute l'équipe parle français et connaît les réalités locales ivoiriennes.", badge: 'badge-purple', blabel: 'Français' },
+        ].map((c, i) => (
+          <div key={i} className="sup-card">
+            <span className="sup-card-icon">{c.icon}</span>
+            <div className="sup-card-title">{c.title}</div>
+            <p className="sup-card-desc">{c.desc}</p>
+            <span className={`sup-badge ${c.badge}`}>● {c.blabel}</span>
+          </div>
+        ))}
+
+        {/* FAQ */}
+        <div className="sup-faq">
+          <div className="sec-label" style={{ marginBottom: 20 }}>FAQ</div>
+          <div className="faq-list">
+            {faqs.map((f, i) => (
+              <div key={i} className={`faq-item${openFaq === i ? ' open' : ''}`}>
+                <button className={`faq-q${openFaq === i ? ' open' : ''}`} onClick={() => setOpenFaq(openFaq === i ? null : i)}>
+                  {f.q}
+                  <span className="faq-arrow">+</span>
+                </button>
+                <div className={`faq-a${openFaq === i ? ' open' : ''}`}>
+                  <p>{f.a}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
 export default function HomePage() {
   const [current, setCurrent] = useState(0)
   const [animating, setAnimating] = useState(false)
@@ -337,6 +413,119 @@ export default function HomePage() {
         .boutique-cta { font-size: 13px; font-weight: 600; color: #fb923c; padding: 10px 22px; border-radius: 100px; border: 0.5px solid rgba(251,146,60,0.3); background: rgba(251,146,60,0.08); white-space: nowrap; transition: all 0.2s; }
         .boutique-banner:hover .boutique-cta { background: rgba(251,146,60,0.15); }
 
+        /* ── HOW IT WORKS ── */
+        .how { max-width: 1240px; margin: 0 auto; padding: 0 28px 80px; }
+        .how-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 24px; margin-top: 40px; }
+        .how-card {
+          background: linear-gradient(135deg, #0e1420, #080c14);
+          border: 0.5px solid rgba(255,255,255,0.06);
+          border-radius: 20px; padding: 32px 28px;
+          position: relative; overflow: hidden;
+          transition: border-color 0.3s, transform 0.3s;
+        }
+        .how-card:hover { border-color: rgba(34,211,165,0.2); transform: translateY(-3px); }
+        .how-num {
+          font-family: 'Space Grotesk', sans-serif;
+          font-size: 64px; font-weight: 800;
+          color: rgba(255,255,255,0.04);
+          position: absolute; top: 12px; right: 20px;
+          line-height: 1; letter-spacing: -3px;
+        }
+        .how-icon { font-size: 32px; margin-bottom: 20px; display: block; }
+        .how-title { font-family: 'Space Grotesk', sans-serif; font-size: 17px; font-weight: 700; color: #fff; margin-bottom: 10px; letter-spacing: -0.3px; }
+        .how-desc { font-size: 13px; color: rgba(255,255,255,0.4); line-height: 1.75; font-weight: 300; }
+
+        /* ── SERVICE CLIENT ── */
+        .support { max-width: 1240px; margin: 0 auto; padding: 0 28px 80px; }
+        .support-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 40px; }
+        .support-hero {
+          grid-column: 1 / -1;
+          background: linear-gradient(135deg, #0d1d17 0%, #080c14 60%, #110d1e 100%);
+          border: 0.5px solid rgba(34,211,165,0.12);
+          border-radius: 24px; padding: 48px 52px;
+          display: flex; align-items: center; justify-content: space-between; gap: 32px;
+          position: relative; overflow: hidden;
+        }
+        .support-hero::before {
+          content: ''; position: absolute; top: -80px; right: -80px;
+          width: 320px; height: 320px; border-radius: 50%;
+          background: radial-gradient(circle, rgba(34,211,165,0.07) 0%, transparent 70%);
+        }
+        .support-hero-text { position: relative; z-index: 1; }
+        .support-hero-text h3 {
+          font-family: 'Space Grotesk', sans-serif;
+          font-size: clamp(22px, 3vw, 34px); font-weight: 800;
+          color: #fff; letter-spacing: -1.2px; line-height: 1.1; margin-bottom: 12px;
+        }
+        .support-hero-text p { font-size: 14px; color: rgba(255,255,255,0.4); line-height: 1.8; max-width: 380px; font-weight: 300; margin-bottom: 24px; }
+        .support-channels { display: flex; gap: 10px; flex-wrap: wrap; }
+        .sup-ch {
+          display: inline-flex; align-items: center; gap: 8px;
+          font-size: 13px; font-weight: 600; padding: 9px 18px;
+          border-radius: 100px; text-decoration: none; transition: all 0.25s;
+        }
+        .sup-ch-wa { background: rgba(37,211,102,0.1); border: 0.5px solid rgba(37,211,102,0.25); color: #25d366; }
+        .sup-ch-wa:hover { background: rgba(37,211,102,0.18); transform: translateY(-1px); }
+        .sup-ch-tg { background: rgba(38,161,222,0.1); border: 0.5px solid rgba(38,161,222,0.25); color: #26a1de; }
+        .sup-ch-tg:hover { background: rgba(38,161,222,0.18); transform: translateY(-1px); }
+        .sup-ch-mail { background: rgba(255,255,255,0.04); border: 0.5px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.65); }
+        .sup-ch-mail:hover { background: rgba(255,255,255,0.08); transform: translateY(-1px); }
+        .support-badge {
+          flex-shrink: 0; position: relative; z-index: 1;
+          width: 140px; height: 140px; border-radius: 50%;
+          background: linear-gradient(135deg, rgba(34,211,165,0.12), rgba(34,211,165,0.03));
+          border: 0.5px solid rgba(34,211,165,0.2);
+          display: flex; flex-direction: column; align-items: center; justify-content: center;
+          box-shadow: 0 0 60px rgba(34,211,165,0.07);
+        }
+        .support-badge-emoji { font-size: 40px; margin-bottom: 4px; }
+        .support-badge-label { font-size: 10px; font-weight: 700; color: #22d3a5; text-transform: uppercase; letter-spacing: 0.12em; text-align: center; }
+
+        .sup-card {
+          background: linear-gradient(135deg, #0e1420, #080c14);
+          border: 0.5px solid rgba(255,255,255,0.06);
+          border-radius: 20px; padding: 28px;
+          transition: border-color 0.3s, transform 0.3s;
+          position: relative; overflow: hidden;
+        }
+        .sup-card:hover { border-color: rgba(255,255,255,0.12); transform: translateY(-3px); }
+        .sup-card-icon { font-size: 28px; margin-bottom: 16px; display: block; }
+        .sup-card-title { font-family: 'Space Grotesk', sans-serif; font-size: 15px; font-weight: 700; color: #fff; margin-bottom: 8px; letter-spacing: -0.3px; }
+        .sup-card-desc { font-size: 13px; color: rgba(255,255,255,0.38); line-height: 1.7; font-weight: 300; }
+        .sup-badge {
+          display: inline-flex; align-items: center; gap: 5px; margin-top: 14px;
+          font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em;
+          padding: 4px 10px; border-radius: 100px;
+        }
+        .badge-green { background: rgba(34,211,165,0.1); color: #22d3a5; border: 0.5px solid rgba(34,211,165,0.2); }
+        .badge-blue  { background: rgba(96,165,250,0.1); color: #60a5fa; border: 0.5px solid rgba(96,165,250,0.2); }
+        .badge-orange{ background: rgba(251,146,60,0.1); color: #fb923c; border: 0.5px solid rgba(251,146,60,0.2); }
+        .badge-purple{ background: rgba(192,132,252,0.1); color: #c084fc; border: 0.5px solid rgba(192,132,252,0.2); }
+
+        .sup-faq { grid-column: 1 / -1; }
+        .faq-list { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+        .faq-item {
+          background: linear-gradient(135deg, #0e1420, #080c14);
+          border: 0.5px solid rgba(255,255,255,0.06);
+          border-radius: 14px; overflow: hidden;
+          transition: border-color 0.25s;
+        }
+        .faq-item.open { border-color: rgba(34,211,165,0.18); }
+        .faq-q {
+          width: 100%; background: none; border: none; cursor: pointer;
+          padding: 20px 24px; display: flex; align-items: center; justify-content: space-between;
+          font-size: 14px; font-weight: 600; color: rgba(255,255,255,0.8);
+          text-align: left; transition: color 0.2s; gap: 16px;
+          font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+        .faq-q:hover { color: #fff; }
+        .faq-q.open { color: #22d3a5; }
+        .faq-arrow { font-size: 18px; color: rgba(255,255,255,0.25); transition: transform 0.3s, color 0.2s; flex-shrink: 0; }
+        .faq-q.open .faq-arrow { transform: rotate(45deg); color: #22d3a5; }
+        .faq-a { max-height: 0; overflow: hidden; transition: max-height 0.35s ease, padding 0.3s; padding: 0 24px; }
+        .faq-a.open { max-height: 200px; padding: 0 24px 20px; }
+        .faq-a p { font-size: 13px; color: rgba(255,255,255,0.4); line-height: 1.8; font-weight: 300; }
+
         /* ── PAYMENT ── */
         .pay { max-width: 1240px; margin: 0 auto; padding: 0 28px 80px; }
         .pay-card {
@@ -365,28 +554,6 @@ export default function HomePage() {
           font-size: 64px; position: relative; z-index: 1;
           box-shadow: 0 0 60px rgba(34,211,165,0.08);
         }
-
-        /* ── HOW IT WORKS ── */
-        .how { max-width: 1240px; margin: 0 auto; padding: 0 28px 80px; }
-        .how-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 24px; margin-top: 40px; }
-        .how-card {
-          background: linear-gradient(135deg, #0e1420, #080c14);
-          border: 0.5px solid rgba(255,255,255,0.06);
-          border-radius: 20px; padding: 32px 28px;
-          position: relative; overflow: hidden;
-          transition: border-color 0.3s, transform 0.3s;
-        }
-        .how-card:hover { border-color: rgba(34,211,165,0.2); transform: translateY(-3px); }
-        .how-num {
-          font-family: 'Space Grotesk', sans-serif;
-          font-size: 64px; font-weight: 800;
-          color: rgba(255,255,255,0.04);
-          position: absolute; top: 12px; right: 20px;
-          line-height: 1; letter-spacing: -3px;
-        }
-        .how-icon { font-size: 32px; margin-bottom: 20px; display: block; }
-        .how-title { font-family: 'Space Grotesk', sans-serif; font-size: 17px; font-weight: 700; color: #fff; margin-bottom: 10px; letter-spacing: -0.3px; }
-        .how-desc { font-size: 13px; color: rgba(255,255,255,0.4); line-height: 1.75; font-weight: 300; }
 
         /* ── CTA ── */
         .cta { max-width: 1240px; margin: 0 auto; padding: 0 28px 80px; }
@@ -462,6 +629,11 @@ export default function HomePage() {
           .pay-chips { justify-content: center; }
           .pay-visual { width: 120px; height: 120px; font-size: 48px; }
           .how-grid { grid-template-columns: 1fr; gap: 14px; }
+          .support-grid { grid-template-columns: 1fr; }
+          .support-hero { flex-direction: column; padding: 32px 24px; gap: 24px; }
+          .support-badge { width: 100px; height: 100px; }
+          .support-badge-emoji { font-size: 30px; }
+          .sup-faq { grid-column: auto; }
           .cta-box { padding: 52px 28px; }
           .cta-slogan::before, .cta-slogan::after { display: none; }
           .foot-in { flex-direction: column; gap: 32px; }
@@ -478,6 +650,8 @@ export default function HomePage() {
           .svc-grid-inner { grid-template-columns: 1fr; }
           .pay-card { padding: 44px; }
           .how-grid { grid-template-columns: 1fr 1fr; }
+          .support-grid { grid-template-columns: 1fr; }
+          .sup-faq { grid-column: auto; }
         }
       `}</style>
 
@@ -674,6 +848,9 @@ export default function HomePage() {
             ))}
           </div>
         </section>
+
+        {/* ── SERVICE CLIENT ── */}
+        <ServiceClient />
 
         {/* ── PAIEMENT ── */}
         <section className="pay">
