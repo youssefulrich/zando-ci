@@ -56,28 +56,28 @@ function ServiceClient() {
             <p>Notre équipe basée à Abidjan vous répond 7j/7 de 8h à 22h. Choisissez le canal qui vous convient.</p>
             <div className="support-channels">
               <a href="https://wa.me/2250160429781" target="_blank" rel="noopener noreferrer" className="sup-ch sup-ch-wa">
-                <span>💬</span> WhatsApp
+                <span></span> WhatsApp
               </a>
               <a href="https://t.me/+2250160429781" target="_blank" rel="noopener noreferrer" className="sup-ch sup-ch-tg">
-                <span>✈️</span> Telegram
+                <span></span> Telegram
               </a>
               <a href="tel:+2250160429781" className="sup-ch sup-ch-mail">
-                <span>📞</span> 0160429781
+                <span></span> 0160429781
               </a>
             </div>
           </div>
           <div className="support-badge">
-            <span className="support-badge-emoji">🛟</span>
+            <span className="support-badge-emoji"></span>
             <span className="support-badge-label">7j/7<br />8h–22h</span>
           </div>
         </div>
 
         {/* 4 mini cartes */}
         {[
-          { icon: '⚡', title: 'Réponse rapide', desc: "Délai moyen de réponse inférieur à 15 minutes via WhatsApp ou Telegram.", badge: 'badge-green', blabel: '< 15 min' },
-          { icon: '🔐', title: 'Paiements sécurisés', desc: "Toutes les transactions passent par les opérateurs officiels. Votre argent est protégé.", badge: 'badge-blue', blabel: '100% sécurisé' },
-          { icon: '🔄', title: 'Remboursements', desc: "En cas d'annulation éligible, votre remboursement arrive sur votre Mobile Money sous 48h.", badge: 'badge-orange', blabel: 'Sous 48h' },
-          { icon: '🌍', title: 'Support en français', desc: "Toute l'équipe parle français et connaît les réalités locales ivoiriennes.", badge: 'badge-purple', blabel: 'Français' },
+          { icon: '', title: 'Réponse rapide', desc: "Délai moyen de réponse inférieur à 15 minutes via WhatsApp ou Telegram.", badge: 'badge-green', blabel: '< 15 min' },
+          { icon: '', title: 'Paiements sécurisés', desc: "Toutes les transactions passent par les opérateurs officiels. Votre argent est protégé.", badge: 'badge-blue', blabel: '100% sécurisé' },
+          { icon: '', title: 'Remboursements', desc: "En cas d'annulation éligible, votre remboursement arrive sur votre Mobile Money sous 48h.", badge: 'badge-orange', blabel: 'Sous 48h' },
+          { icon: '', title: 'Support en français', desc: "Toute l'équipe parle français et connaît les réalités locales ivoiriennes.", badge: 'badge-purple', blabel: 'Français' },
         ].map((c, i) => (
           <div key={i} className="sup-card">
             <span className="sup-card-icon">{c.icon}</span>
@@ -762,22 +762,7 @@ export default function HomePage() {
           <div className="slogan-line" />
         </div>
 
-        {/* ── STATS ── */}
-        <div className="stats">
-          <div className="stats-grid">
-            {[
-              { n: '5 000+', l: 'Utilisateurs', c: '#22d3a5' },
-              { n: '200+', l: 'Réservations / mois', c: '#60a5fa' },
-              { n: '4', l: 'Services', c: '#c084fc' },
-              { n: '4', l: 'Moyens de paiement', c: '#fb923c' },
-            ].map((s, i) => (
-              <div key={i} className="stat">
-                <div className="stat-n" style={{ color: s.c }}>{s.n}</div>
-                <div className="stat-l">{s.l}</div>
-              </div>
-            ))}
-          </div>
-        </div>
+
 
         {/* ── SERVICES ── */}
         <section className="svc">
@@ -819,7 +804,7 @@ export default function HomePage() {
           {/* Boutique banner */}
           <Link href="/boutique" className="boutique-banner">
             <div className="boutique-banner-left">
-              <span className="boutique-icon">🛍️</span>
+              <span className="boutique-icon"></span>
               <div>
                 <div className="boutique-title">Boutique Zando CI</div>
                 <div className="boutique-sub">Produits & services de vendeurs ivoiriens · Mode, électronique, beauté…</div>
@@ -835,9 +820,9 @@ export default function HomePage() {
           <h2 className="sec-title">Comment ça marche ?</h2>
           <div className="how-grid">
             {[
-              { n: '01', icon: '🔍', title: 'Cherchez', desc: "Parcourez résidences, véhicules, événements et produits disponibles en Côte d'Ivoire." },
-              { n: '02', icon: '📅', title: 'Réservez', desc: "Choisissez vos dates, quantités ou billets et confirmez en quelques secondes." },
-              { n: '03', icon: '📱', title: 'Payez Mobile Money', desc: "Orange Money, MTN, Wave ou Moov — payez depuis votre téléphone, sans carte bancaire." },
+              { n: '01', icon: '', title: 'Cherchez', desc: "Parcourez résidences, véhicules, événements et produits disponibles en Côte d'Ivoire." },
+              { n: '02', icon: '', title: 'Réservez', desc: "Choisissez vos dates, quantités ou billets et confirmez en quelques secondes." },
+              { n: '03', icon: '', title: 'Payez Mobile Money', desc: "Orange Money, MTN, Wave ou Moov — payez depuis votre téléphone, sans carte bancaire." },
             ].map(h => (
               <div key={h.n} className="how-card">
                 <span className="how-num">{h.n}</span>
@@ -865,7 +850,7 @@ export default function HomePage() {
                 ))}
               </div>
             </div>
-            <div className="pay-visual">📱</div>
+            <div className="pay-visual"></div>
           </div>
         </section>
 

@@ -32,12 +32,12 @@ export default async function EventsPage({
   const totalPages = Math.ceil((count ?? 0) / pageSize)
 
   const CATEGORIES = [
-    { value: 'concert',    label: 'Concert',    emoji: '🎵' },
-    { value: 'festival',   label: 'Festival',   emoji: '🎪' },
-    { value: 'sport',      label: 'Sport',      emoji: '⚽' },
-    { value: 'conference', label: 'Conférence', emoji: '🎤' },
-    { value: 'theatre',    label: 'Théâtre',    emoji: '🎭' },
-    { value: 'autre',      label: 'Autre',      emoji: '✨' },
+    { value: 'concert',    label: 'Concert',    emoji: '' },
+    { value: 'festival',   label: 'Festival',   emoji: '' },
+    { value: 'sport',      label: 'Sport',      emoji: '' },
+    { value: 'conference', label: 'Conférence', emoji: '' },
+    { value: 'theatre',    label: 'Théâtre',    emoji: '' },
+    { value: 'autre',      label: 'Autre',      emoji: '' },
   ]
   const CITIES = ['Abidjan', 'Bouaké', 'Daloa', 'Yamoussoukro', 'San-Pédro', 'Korhogo']
 
@@ -70,8 +70,10 @@ export default async function EventsPage({
 
         /* ── CATS TABS ── */
         .ev-tabs-bar {
-          background: var(--bg2); border-bottom: 1px solid var(--border);
+          background: rgba(22,22,28,0.85); border-bottom: 1px solid var(--border);
           padding: 0 16px; display: flex; overflow-x: auto; scrollbar-width: none;
+          position: relative; z-index: 10;
+          backdrop-filter: blur(8px);
         }
         .ev-tabs-bar::-webkit-scrollbar { display: none; }
         .ev-tab {
@@ -86,32 +88,76 @@ export default async function EventsPage({
 
         /* ── HERO ── */
         .ev-hero {
-          background: var(--bg2); border-bottom: 1px solid var(--border);
-          padding: 28px 16px 22px; position: relative; overflow: hidden;
+          border-bottom: 1px solid var(--border);
+          padding: 48px 16px 24px;
+          position: relative; overflow: hidden;
         }
+
+        /* Image de fond */
+        .ev-hero-bg {
+          position: absolute; inset: 0; z-index: 0;
+          background-image: url('https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=1600&q=80&auto=format&fit=crop');
+          background-size: cover;
+          background-position: center 35%;
+          background-repeat: no-repeat;
+          filter: saturate(0.8) brightness(0.55);
+          transform: scale(1.04);
+          transition: transform 10s ease;
+        }
+        .ev-hero:hover .ev-hero-bg {
+          transform: scale(1.08);
+        }
+
+        /* Overlay couleur */
+        .ev-hero-overlay {
+          position: absolute; inset: 0; z-index: 1;
+          background: linear-gradient(
+            135deg,
+            rgba(14,14,18,0.3) 0%,
+            rgba(26,10,61,0.15) 50%,
+            rgba(14,14,18,0.35) 100%
+          );
+        }
+
+        /* Fondu bas */
+        .ev-hero-overlay-bottom {
+          position: absolute; bottom: 0; left: 0; right: 0; z-index: 2;
+          height: 80px;
+          background: linear-gradient(to top, #0E0E12 0%, transparent 100%);
+        }
+
         .ev-hero::before {
-          content: ''; position: absolute; top: -80px; right: -80px;
+          content: ''; position: absolute; top: -80px; right: -80px; z-index: 3;
           width: 320px; height: 320px; border-radius: 50%;
-          background: radial-gradient(circle, rgba(167,139,250,0.07) 0%, transparent 65%);
+          background: radial-gradient(circle, rgba(167,139,250,0.08) 0%, transparent 65%);
           pointer-events: none;
         }
-        .ev-hero-inner { max-width: 1100px; margin: 0 auto; position: relative; z-index: 1; }
+
+        .ev-hero-inner {
+          max-width: 1100px; margin: 0 auto;
+          position: relative; z-index: 4;
+        }
         .ev-hero-tag {
           display: inline-flex; align-items: center; gap: 6px;
           font-size: 11px; font-weight: 700; color: var(--purple);
           text-transform: uppercase; letter-spacing: 0.15em; margin-bottom: 10px;
         }
         .ev-hero-tag::before { content: ''; width: 14px; height: 1.5px; background: var(--purple); }
-        .ev-hero-h1 { font-size: clamp(22px, 4vw, 36px); font-weight: 900; color: var(--text); letter-spacing: -1px; line-height: 1.1; margin-bottom: 6px; }
-        .ev-hero-count { font-size: 13px; color: var(--muted); }
+        .ev-hero-h1 {
+          font-size: clamp(22px, 4vw, 36px); font-weight: 900; color: var(--text);
+          letter-spacing: -1px; line-height: 1.1; margin-bottom: 6px;
+          text-shadow: 0 2px 20px rgba(0,0,0,0.5);
+        }
+        .ev-hero-count { font-size: 13px; color: rgba(255,255,255,0.45); }
         .ev-hero-count strong { color: var(--purple); font-weight: 700; }
 
         .ev-active-filters { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 14px; }
         .ev-filter-badge {
           display: inline-flex; align-items: center; gap: 5px;
           padding: 4px 12px; border-radius: 20px;
-          background: rgba(167,139,250,0.08); border: 1px solid rgba(167,139,250,0.2);
+          background: rgba(167,139,250,0.1); border: 1px solid rgba(167,139,250,0.25);
           font-size: 11px; color: var(--purple); font-weight: 600;
+          backdrop-filter: blur(4px);
         }
 
         /* ── BODY ── */
@@ -210,7 +256,7 @@ export default async function EventsPage({
         @media (min-width: 768px) {
           .ev-bottom-nav { display: none; }
           .ev-tabs-bar { padding: 0 28px; }
-          .ev-hero { padding: 32px 28px 24px; }
+          .ev-hero { padding: 32px 28px 28px; }
           .ev-body { padding: 28px 28px 60px; }
         }
       `}</style>
@@ -221,7 +267,7 @@ export default async function EventsPage({
         {/* ── TABS CATÉGORIES ── */}
         <div className="ev-tabs-bar">
           <Link href="/events" className={`ev-tab${!params.category ? ' active' : ''}`}>
-            🎉 Tous
+             Tous
           </Link>
           {CATEGORIES.map(c => (
             <Link
@@ -236,6 +282,13 @@ export default async function EventsPage({
 
         {/* ── HERO ── */}
         <div className="ev-hero">
+          {/* Image de fond */}
+          <div className="ev-hero-bg" />
+          {/* Overlay couleur */}
+          <div className="ev-hero-overlay" />
+          {/* Fondu bas */}
+          <div className="ev-hero-overlay-bottom" />
+
           <div className="ev-hero-inner">
             <div className="ev-hero-tag">Découvrir</div>
             <h1 className="ev-hero-h1">Événements à venir</h1>
@@ -245,8 +298,8 @@ export default async function EventsPage({
             {(params.category || params.city || params.date) && (
               <div className="ev-active-filters">
                 {params.category && <span className="ev-filter-badge">{CATEGORIES.find(c => c.value === params.category)?.emoji} {CATEGORIES.find(c => c.value === params.category)?.label}</span>}
-                {params.city     && <span className="ev-filter-badge">📍 {params.city}</span>}
-                {params.date     && <span className="ev-filter-badge">📅 {params.date}</span>}
+                {params.city     && <span className="ev-filter-badge"> {params.city}</span>}
+                {params.date     && <span className="ev-filter-badge"> {params.date}</span>}
               </div>
             )}
           </div>
@@ -259,7 +312,7 @@ export default async function EventsPage({
             {/* ── SIDEBAR ── */}
             <aside className="ev-sidebar">
               <div className="ev-sidebar-box">
-                <div className="ev-sidebar-title">🔍 Filtres</div>
+                <div className="ev-sidebar-title"> Filtres</div>
                 <form>
                   <div className="ev-field">
                     <label className="ev-label">Ville</label>
@@ -298,17 +351,17 @@ export default async function EventsPage({
                           <div className="ev-card-img">
                             {e.main_photo
                               ? <img src={e.main_photo} alt={e.title} />
-                              : <div className="ev-card-ph">◉</div>
+                              : <div className="ev-card-ph"></div>
                             }
                             <span className="ev-badge-cat">{e.category}</span>
                             <span className="ev-badge-status" style={{ background: badge.bg, color: badge.color, borderColor: badge.color + '40' }}>
                               {badge.label}
                             </span>
-                            <div className="ev-card-date">📅 {formatDate(e.event_date)}</div>
+                            <div className="ev-card-date"> {formatDate(e.event_date)}</div>
                           </div>
                           <div className="ev-card-body">
                             <div className="ev-card-title">{e.title}</div>
-                            <div className="ev-card-venue">📍 {e.venue_name}</div>
+                            <div className="ev-card-venue"> {e.venue_name}</div>
                             <div className="ev-card-footer">
                               <div className="ev-card-price">
                                 {e.price_per_ticket === 0
@@ -342,7 +395,7 @@ export default async function EventsPage({
                 </>
               ) : (
                 <div className="ev-empty">
-                  <div style={{ fontSize: 52, marginBottom: 16 }}>◉</div>
+                  <div style={{ fontSize: 52, marginBottom: 16 }}></div>
                   <p style={{ fontSize: 16, fontWeight: 800, color: 'var(--text)', marginBottom: 8 }}>Aucun événement trouvé</p>
                   <p style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 22 }}>Revenez bientôt ou modifiez vos filtres</p>
                   <Link href="/events" style={{ display: 'inline-block', padding: '10px 24px', background: 'rgba(167,139,250,0.1)', color: 'var(--purple)', borderRadius: 20, fontSize: 13, fontWeight: 700, textDecoration: 'none', border: '1px solid rgba(167,139,250,0.25)' }}>
@@ -357,22 +410,22 @@ export default async function EventsPage({
         {/* ── BOTTOM NAV mobile ── */}
         <nav className="ev-bottom-nav">
           <Link href="/boutique" className="ev-bnav-item">
-            <span className="ev-bnav-ico">🛍️</span>Boutique
+            <span className="ev-bnav-ico"></span>Boutique
           </Link>
           <Link href="/residences" className="ev-bnav-item">
-            <span className="ev-bnav-ico">🏡</span>Résidences
+            <span className="ev-bnav-ico"></span>Résidences
           </Link>
           <div className="ev-bnav-fab-wrap">
             <Link href="/publier/event">
-              <div className="ev-bnav-fab">➕</div>
+              <div className="ev-bnav-fab"></div>
             </Link>
             <span className="ev-bnav-fab-lbl">Publier</span>
           </div>
           <Link href="/events" className="ev-bnav-item active">
-            <span className="ev-bnav-ico">🎉</span>Événements
+            <span className="ev-bnav-ico"></span>Événements
           </Link>
           <Link href="/dashboard" className="ev-bnav-item">
-            <span className="ev-bnav-ico">👤</span>Compte
+            <span className="ev-bnav-ico"></span>Compte
           </Link>
         </nav>
       </div>

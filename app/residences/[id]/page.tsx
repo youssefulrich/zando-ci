@@ -54,9 +54,9 @@ export default async function ResidenceDetailPage({ params }: { params: Promise<
   const amenities: string[] = Array.isArray(residence.amenities) ? residence.amenities : []
 
   const AMENITY_ICONS: Record<string, string> = {
-    wifi: '📶', piscine: '🏊', parking: '🅿️', climatisation: '❄️',
-    cuisine: '🍳', tv: '📺', lave_linge: '🫧', sécurité: '🔒',
-    gardien: '💂', générateur: '⚡', eau_chaude: '🚿', balcon: '🌿',
+    wifi: '', piscine: '', parking: '', climatisation: '',
+    cuisine: '', tv: '', lave_linge: '', sécurité: '',
+    gardien: '', générateur: '', eau_chaude: '', balcon: '',
   }
 
   const ownerName = (residence.profiles as any)?.full_name ?? ''
@@ -247,10 +247,10 @@ export default async function ResidenceDetailPage({ params }: { params: Promise<
 
               {/* Header */}
               <div className="rd-header">
-                <div className="rd-type-badge">🏡 {residence.type ?? 'Résidence'}</div>
+                <div className="rd-type-badge">{residence.type ?? 'Résidence'}</div>
                 <h1 className="rd-title">{residence.title}</h1>
                 <div className="rd-location">
-                  <span>📍</span>
+                  <span></span>
                   {residence.address && `${residence.address}, `}{residence.city}
                 </div>
               </div>
@@ -258,10 +258,10 @@ export default async function ResidenceDetailPage({ params }: { params: Promise<
               {/* Stats */}
               <div className="rd-stats">
                 {[
-                  { icon: '🛏️', value: String(residence.bedrooms),  label: 'Chambres' },
-                  { icon: '🚿', value: String(residence.bathrooms), label: 'Salles de bain' },
-                  { icon: '👥', value: String(residence.max_guests), label: 'Personnes max' },
-                  { icon: '📐', value: (residence as any).surface ? `${(residence as any).surface}m²` : '—', label: 'Surface' },
+                  { icon: '', value: String(residence.bedrooms),  label: 'Chambres' },
+                  { icon: '', value: String(residence.bathrooms), label: 'Salles de bain' },
+                  { icon: '', value: String(residence.max_guests), label: 'Personnes max' },
+                  { icon: '', value: (residence as any).surface ? `${(residence as any).surface}m²` : '—', label: 'Surface' },
                 ].map((s, i) => (
                   <div key={i} className="rd-stat">
                     <div className="rd-stat-ico">{s.icon}</div>

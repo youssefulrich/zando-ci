@@ -67,7 +67,7 @@ export default function ProduitDetailClient({ params }: { params: Promise<{ id: 
     }).select().single()
     if (error || !order) { setOrderLoading(false); return }
     await (supabase as any).from('notifications').insert({
-      user_id: product.owner_id, title: '🛍️ Nouvelle commande !',
+      user_id: product.owner_id, title: ' Nouvelle commande !',
       message: `${profile?.full_name ?? 'Un client'} veut commander "${product.name}" (x${quantity})`,
       type: 'success',
     })
@@ -85,7 +85,7 @@ export default function ProduitDetailClient({ params }: { params: Promise<{ id: 
   if (loading) return (
     <div style={{ background: '#0E0E12', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div style={{ textAlign: 'center' }}>
-        <div style={{ fontSize: 36, marginBottom: 12 }}>🛍️</div>
+        <div style={{ fontSize: 36, marginBottom: 12 }}></div>
         <p style={{ color: '#555', fontSize: 14 }}>Chargement du produit…</p>
       </div>
     </div>
@@ -94,7 +94,7 @@ export default function ProduitDetailClient({ params }: { params: Promise<{ id: 
   if (!product) return (
     <div style={{ background: '#0E0E12', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div style={{ textAlign: 'center' }}>
-        <div style={{ fontSize: 48, marginBottom: 12 }}>📦</div>
+        <div style={{ fontSize: 48, marginBottom: 12 }}></div>
         <p style={{ color: '#888', fontSize: 15, marginBottom: 20 }}>Produit introuvable</p>
         <Link href="/boutique" style={{ padding: '10px 24px', background: '#FF6B00', color: '#fff', borderRadius: 8, fontSize: 14, fontWeight: 700, textDecoration: 'none' }}>
           Retour à la boutique
@@ -333,7 +333,7 @@ export default function ProduitDetailClient({ params }: { params: Promise<{ id: 
               <div className="pd-main-img">
                 {photos.length > 0
                   ? <img src={photos[selectedPhoto]} alt={product.name} />
-                  : <div className="pd-main-img-ph">📦</div>
+                  : <div className="pd-main-img-ph"></div>
                 }
                 {hasDiscount && <div className="pd-discount-badge">-{discount}%</div>}
               </div>
@@ -361,7 +361,7 @@ export default function ProduitDetailClient({ params }: { params: Promise<{ id: 
                   <div className="pd-shop-avatar">
                     {shop.logo_url
                       ? <img src={shop.logo_url} alt="" />
-                      : '🏪'
+                      : ''
                     }
                   </div>
                   <div>
@@ -375,7 +375,7 @@ export default function ProduitDetailClient({ params }: { params: Promise<{ id: 
               {/* Badges */}
               <div className="pd-badges">
                 <span className={`pd-badge ${isService ? 'pd-badge-service' : 'pd-badge-product'}`}>
-                  {isService ? '⚙️ SERVICE' : '📦 PRODUIT'}
+                  {isService ? ' SERVICE' : ' PRODUIT'}
                 </span>
                 <span className="pd-badge pd-badge-cat">{product.category}</span>
               </div>
@@ -400,7 +400,7 @@ export default function ProduitDetailClient({ params }: { params: Promise<{ id: 
                 <div className="pd-delivery-card">
                   {product.delivery_available && (
                     <div className="pd-delivery-item">
-                      <span className="pd-delivery-ico">🚚</span>
+                      <span className="pd-delivery-ico"></span>
                       <div>
                         <div className="pd-delivery-label">Livraison disponible</div>
                         <div className="pd-delivery-sub">
@@ -411,7 +411,7 @@ export default function ProduitDetailClient({ params }: { params: Promise<{ id: 
                   )}
                   {product.pickup_available && (
                     <div className="pd-delivery-item">
-                      <span className="pd-delivery-ico">📍</span>
+                      <span className="pd-delivery-ico"></span>
                       <div>
                         <div className="pd-delivery-label">Retrait possible</div>
                         <div className="pd-delivery-sub">{product.city}</div>
@@ -424,7 +424,7 @@ export default function ProduitDetailClient({ params }: { params: Promise<{ id: 
               {/* Stock */}
               {!isService && product.stock !== null && (
                 <p className={`pd-stock ${product.stock > 0 ? 'ok' : 'low'}`}>
-                  {product.stock > 0 ? `✓ ${product.stock} en stock` : '📦 Sur commande'}
+                  {product.stock > 0 ? `✓ ${product.stock} en stock` : ' Sur commande'}
                 </p>
               )}
 

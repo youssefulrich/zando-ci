@@ -34,9 +34,9 @@ export default async function ResidencesPage({
 
   const CITIES = ['Abidjan', 'Bouaké', 'Daloa', 'Yamoussoukro', 'San-Pédro', 'Korhogo']
   const TYPES = [
-    { value: 'villa', label: '🏡 Villa' },
-    { value: 'appartement', label: '🏢 Appartement' },
-    { value: 'studio', label: '🏠 Studio' },
+    { value: 'villa', label: ' Villa' },
+    { value: 'appartement', label: ' Appartement' },
+    { value: 'studio', label: ' Studio' },
   ]
 
   const accent = '#22d3a5'
@@ -52,21 +52,57 @@ export default async function ResidencesPage({
 
         /* ── HERO BANNER ── */
         .rp-hero {
-          background: linear-gradient(135deg, #0a1a14 0%, #070b12 50%, #0a1020 100%);
+          background: #070b12;
           border-bottom: 0.5px solid rgba(255,255,255,0.06);
           padding: 48px 0 0;
           position: relative;
           overflow: hidden;
         }
+
+        /* Image de fond */
+        .rp-hero-bg {
+          position: absolute; inset: 0; z-index: 0;
+          background-image: url('https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=1600&q=80&auto=format&fit=crop');
+          background-size: cover;
+          background-position: center 40%;
+          background-repeat: no-repeat;
+          filter: saturate(0.65) brightness(0.3);
+          transform: scale(1.04);
+          transition: transform 10s ease;
+        }
+        .rp-hero:hover .rp-hero-bg {
+          transform: scale(1.08);
+        }
+
+        /* Overlay de couleur */
+        .rp-hero-overlay {
+          position: absolute; inset: 0; z-index: 1;
+          background: linear-gradient(
+            135deg,
+            rgba(7,11,18,0.6) 0%,
+            rgba(10,26,20,0.4) 45%,
+            rgba(7,11,24,0.65) 100%
+          );
+        }
+
+        /* Fondu bas vers la page */
+        .rp-hero-overlay-bottom {
+          position: absolute; bottom: 0; left: 0; right: 0; z-index: 2;
+          height: 90px;
+          background: linear-gradient(to top, #070b12 0%, transparent 100%);
+        }
+
         .rp-hero::before {
           content: '';
-          position: absolute; top: -80px; right: -80px;
+          position: absolute; top: -80px; right: -80px; z-index: 3;
           width: 400px; height: 400px; border-radius: 50%;
-          background: radial-gradient(circle, rgba(34,211,165,0.06) 0%, transparent 65%);
+          background: radial-gradient(circle, rgba(34,211,165,0.07) 0%, transparent 65%);
           pointer-events: none;
         }
+
         .rp-hero-inner {
           max-width: 1200px; margin: 0 auto; padding: 0 28px 40px;
+          position: relative; z-index: 4;
         }
         .rp-breadcrumb {
           display: flex; align-items: center; gap: 8px;
@@ -91,9 +127,10 @@ export default async function ResidencesPage({
           font-family: 'Space Grotesk', sans-serif;
           font-size: clamp(26px, 4vw, 40px); font-weight: 700;
           color: #fff; letter-spacing: -1.5px; line-height: 1.1; margin-bottom: 8px;
+          text-shadow: 0 2px 20px rgba(0,0,0,0.4);
         }
         .rp-hero-count {
-          font-size: 13px; color: rgba(255,255,255,0.35); font-weight: 300;
+          font-size: 13px; color: rgba(255,255,255,0.45); font-weight: 300;
         }
         .rp-hero-count strong { color: ${accent}; font-weight: 600; }
 
@@ -113,18 +150,20 @@ export default async function ResidencesPage({
           background: ${accent}; color: #070b12; border-color: ${accent};
         }
         .rp-tab-inactive {
-          background: rgba(255,255,255,0.04);
-          color: rgba(255,255,255,0.45);
-          border-color: rgba(255,255,255,0.08);
+          background: rgba(255,255,255,0.07);
+          color: rgba(255,255,255,0.5);
+          border-color: rgba(255,255,255,0.1);
+          backdrop-filter: blur(4px);
         }
         .rp-tab-inactive:hover {
-          background: rgba(255,255,255,0.08);
-          color: rgba(255,255,255,0.75);
+          background: rgba(255,255,255,0.12);
+          color: rgba(255,255,255,0.85);
         }
         .rp-tab-active {
-          background: rgba(34,211,165,0.1);
+          background: rgba(34,211,165,0.12);
           color: ${accent};
-          border-color: rgba(34,211,165,0.3);
+          border-color: rgba(34,211,165,0.35);
+          backdrop-filter: blur(4px);
         }
 
         /* ── LAYOUT ── */
@@ -321,6 +360,13 @@ export default async function ResidencesPage({
 
         {/* ── HERO ── */}
         <div className="rp-hero">
+          {/* Image de fond */}
+          <div className="rp-hero-bg" />
+          {/* Overlay couleur */}
+          <div className="rp-hero-overlay" />
+          {/* Fondu bas */}
+          <div className="rp-hero-overlay-bottom" />
+
           <div className="rp-hero-inner">
             <div className="rp-breadcrumb">
               <Link href="/">Accueil</Link>
@@ -363,7 +409,7 @@ export default async function ResidencesPage({
             {/* ── SIDEBAR ── */}
             <aside className="rp-sidebar">
               <div className="rp-sidebar-box">
-                <div className="rp-sidebar-title">🔍 Filtres</div>
+                <div className="rp-sidebar-title"> Filtres</div>
                 <form>
                   <div className="rp-field">
                     <label className="rp-label">Ville</label>
@@ -407,10 +453,10 @@ export default async function ResidencesPage({
                   {count ?? 0} résidence{(count ?? 0) > 1 ? 's' : ''} trouvée{(count ?? 0) > 1 ? 's' : ''}
                 </span>
                 <div className="rp-active-filters">
-                  {params.city && <span className="rp-filter-badge">📍 {params.city}</span>}
-                  {params.type && <span className="rp-filter-badge">🏠 {TYPES.find(t => t.value === params.type)?.label}</span>}
-                  {params.bedrooms && <span className="rp-filter-badge">🛏️ {params.bedrooms}+ chambres</span>}
-                  {(params.min || params.max) && <span className="rp-filter-badge">💰 {params.min ? formatPrice(Number(params.min)) : '0'} — {params.max ? formatPrice(Number(params.max)) : '∞'}</span>}
+                  {params.city && <span className="rp-filter-badge">{params.city}</span>}
+                  {params.type && <span className="rp-filter-badge">{TYPES.find(t => t.value === params.type)?.label}</span>}
+                  {params.bedrooms && <span className="rp-filter-badge">{params.bedrooms}+ chambres</span>}
+                  {(params.min || params.max) && <span className="rp-filter-badge"> {params.min ? formatPrice(Number(params.min)) : '0'} — {params.max ? formatPrice(Number(params.max)) : '∞'}</span>}
                 </div>
               </div>
 
@@ -425,14 +471,14 @@ export default async function ResidencesPage({
                             : <div className="rp-card-img-placeholder">⌂</div>
                           }
                           <span className="rp-card-type">{r.type}</span>
-                          <span className="rp-card-city">📍 {r.city}</span>
+                          <span className="rp-card-city"> {r.city}</span>
                         </div>
                         <div className="rp-card-body">
                           <p className="rp-card-title">{r.title}</p>
                           <div className="rp-card-meta">
-                            <span>🛏️ {r.bedrooms} ch.</span>
-                            <span>👥 {r.max_guests} pers.</span>
-                            {r.bathrooms && <span>🚿 {r.bathrooms} sdb</span>}
+                            <span> {r.bedrooms} ch.</span>
+                            <span> {r.max_guests} pers.</span>
+                            {r.bathrooms && <span> {r.bathrooms} sdb</span>}
                           </div>
                           <div className="rp-card-footer">
                             <div className="rp-card-price">
@@ -461,7 +507,7 @@ export default async function ResidencesPage({
                 </>
               ) : (
                 <div className="rp-empty">
-                  <div className="rp-empty-icon">⌂</div>
+                  <div className="rp-empty-icon"></div>
                   <p className="rp-empty-title">Aucune résidence trouvée</p>
                   <p className="rp-empty-sub">Essayez de modifier vos filtres de recherche</p>
                   <Link href="/residences" style={{ display: 'inline-block', padding: '10px 24px', background: 'rgba(34,211,165,0.1)', color: '#22d3a5', borderRadius: 100, fontSize: 13, fontWeight: 600, textDecoration: 'none', border: '0.5px solid rgba(34,211,165,0.25)' }}>

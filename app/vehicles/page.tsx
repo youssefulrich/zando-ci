@@ -35,117 +35,443 @@ export default async function VehiclesPage({
   const CITIES = ['Abidjan', 'Bouaké', 'Daloa', 'Yamoussoukro', 'San-Pédro', 'Korhogo']
   const TYPES = ['suv', 'berline', '4x4', 'citadine', 'minibus']
 
+  const accent = '#60a5fa'
+
   return (
     <>
       <style>{`
-        .veh-container { max-width: 1200px; margin: 0 auto; padding: 40px 48px; }
-        .veh-layout { display: flex; gap: 32px; align-items: flex-start; }
+        *, *::before, *::after { box-sizing: border-box; }
+
+        .veh { background: #0a0f1a; min-height: 100vh; }
+
+        /* ── HERO ── */
+        .veh-hero {
+          border-bottom: 0.5px solid rgba(255,255,255,0.06);
+          padding: 48px 0 0;
+          position: relative;
+          overflow: hidden;
+        }
+
+        /* Image de fond */
+        .veh-hero-bg {
+          position: absolute; inset: 0; z-index: 0;
+          background-image: url('https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=1600&q=80&auto=format&fit=crop');
+          background-size: cover;
+          background-position: center 55%;
+          background-repeat: no-repeat;
+          filter: saturate(0.55) brightness(0.28);
+          transform: scale(1.04);
+          transition: transform 10s ease;
+        }
+        .veh-hero:hover .veh-hero-bg {
+          transform: scale(1.08);
+        }
+
+        /* Overlay couleur */
+        .veh-hero-overlay {
+          position: absolute; inset: 0; z-index: 1;
+          background: linear-gradient(
+            135deg,
+            rgba(10,15,26,0.65) 0%,
+            rgba(10,20,40,0.4) 45%,
+            rgba(10,15,26,0.7) 100%
+          );
+        }
+
+        /* Fondu bas */
+        .veh-hero-overlay-bottom {
+          position: absolute; bottom: 0; left: 0; right: 0; z-index: 2;
+          height: 90px;
+          background: linear-gradient(to top, #0a0f1a 0%, transparent 100%);
+        }
+
+        .veh-hero::before {
+          content: '';
+          position: absolute; top: -80px; right: -80px; z-index: 3;
+          width: 400px; height: 400px; border-radius: 50%;
+          background: radial-gradient(circle, rgba(96,165,250,0.07) 0%, transparent 65%);
+          pointer-events: none;
+        }
+
+        .veh-hero-inner {
+          max-width: 1200px; margin: 0 auto; padding: 0 28px 40px;
+          position: relative; z-index: 4;
+        }
+
+        /* Breadcrumb */
+        .veh-breadcrumb {
+          display: flex; align-items: center; gap: 8px;
+          font-size: 12px; color: rgba(255,255,255,0.3);
+          margin-bottom: 24px;
+        }
+        .veh-breadcrumb a { color: rgba(255,255,255,0.3); text-decoration: none; transition: color 0.2s; }
+        .veh-breadcrumb a:hover { color: rgba(255,255,255,0.7); }
+        .veh-breadcrumb span { color: rgba(255,255,255,0.6); }
+
+        .veh-hero-label {
+          font-size: 10px; font-weight: 700; color: ${accent};
+          text-transform: uppercase; letter-spacing: 0.18em;
+          display: flex; align-items: center; gap: 8px; margin-bottom: 12px;
+        }
+        .veh-hero-label::before { content: ''; width: 16px; height: 1px; background: ${accent}; }
+
+        .veh-hero-h1 {
+          font-size: clamp(26px, 4vw, 40px); font-weight: 800;
+          color: #fff; letter-spacing: -1.5px; line-height: 1.1;
+          margin-bottom: 8px;
+          text-shadow: 0 2px 20px rgba(0,0,0,0.4);
+        }
+        .veh-hero-count {
+          font-size: 13px; color: rgba(255,255,255,0.45); font-weight: 300;
+          margin-bottom: 28px;
+        }
+        .veh-hero-count strong { color: ${accent}; font-weight: 600; }
+
+        /* Type tabs */
+        .veh-tabs {
+          display: flex; gap: 6px; overflow-x: auto;
+          scrollbar-width: none; padding-bottom: 2px;
+        }
+        .veh-tabs::-webkit-scrollbar { display: none; }
+        .veh-tab {
+          padding: 8px 18px; border-radius: 100px;
+          font-size: 12px; font-weight: 600; white-space: nowrap;
+          text-decoration: none; transition: all 0.2s; border: 0.5px solid transparent;
+          text-transform: uppercase;
+        }
+        .veh-tab-all {
+          background: ${accent}; color: #0a1428; border-color: ${accent};
+        }
+        .veh-tab-inactive {
+          background: rgba(255,255,255,0.07);
+          color: rgba(255,255,255,0.5);
+          border-color: rgba(255,255,255,0.1);
+          backdrop-filter: blur(4px);
+        }
+        .veh-tab-inactive:hover {
+          background: rgba(255,255,255,0.12);
+          color: rgba(255,255,255,0.85);
+        }
+        .veh-tab-active {
+          background: rgba(96,165,250,0.12);
+          color: ${accent};
+          border-color: rgba(96,165,250,0.35);
+          backdrop-filter: blur(4px);
+        }
+
+        /* ── LAYOUT ── */
+        .veh-container { max-width: 1200px; margin: 0 auto; padding: 32px 28px 80px; }
+        .veh-layout { display: flex; gap: 28px; align-items: flex-start; }
+
+        /* ── SIDEBAR ── */
         .veh-sidebar {
-          width: 240px; flex-shrink: 0;
-          background: #111827; border: 0.5px solid rgba(255,255,255,0.08);
+          width: 220px; flex-shrink: 0;
+          position: sticky; top: 88px;
+        }
+        .veh-sidebar-box {
+          background: #111827;
+          border: 0.5px solid rgba(255,255,255,0.07);
           border-radius: 16px; padding: 20px;
         }
+        .veh-sidebar-title {
+          font-size: 13px; font-weight: 600; color: #fff;
+          margin-bottom: 20px; letter-spacing: -0.3px;
+          display: flex; align-items: center; gap: 8px;
+        }
+        .veh-field { margin-bottom: 18px; }
+        .veh-label {
+          display: block; font-size: 10px; font-weight: 700;
+          color: rgba(255,255,255,0.35); text-transform: uppercase;
+          letter-spacing: 0.12em; margin-bottom: 8px;
+        }
+        .veh-select, .veh-input {
+          width: 100%; background: rgba(255,255,255,0.04);
+          border: 0.5px solid rgba(255,255,255,0.08);
+          border-radius: 10px; padding: 10px 12px;
+          font-size: 13px; color: #fff; outline: none;
+          colorScheme: dark; transition: border-color 0.2s;
+        }
+        .veh-select:focus, .veh-input:focus { border-color: rgba(96,165,250,0.35); }
+        .veh-price-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .veh-divider { height: 0.5px; background: rgba(255,255,255,0.06); margin: 18px 0; }
+        .veh-apply {
+          width: 100%; padding: 11px; background: ${accent};
+          color: #0a1428; border-radius: 10px; border: none;
+          font-size: 13px; font-weight: 700; cursor: pointer;
+          transition: all 0.2s; margin-bottom: 8px;
+        }
+        .veh-apply:hover { background: #93c5fd; transform: translateY(-1px); }
+        .veh-reset {
+          display: block; text-align: center; font-size: 12px;
+          color: rgba(255,255,255,0.25); text-decoration: none;
+          transition: color 0.2s;
+        }
+        .veh-reset:hover { color: rgba(255,255,255,0.5); }
+
+        /* ── GRID ── */
+        .veh-main { flex: 1; min-width: 0; }
+        .veh-results-bar {
+          display: flex; align-items: center; justify-content: space-between;
+          margin-bottom: 20px; gap: 12px; flex-wrap: wrap;
+        }
+        .veh-results-text { font-size: 13px; color: rgba(255,255,255,0.35); }
+        .veh-active-filters { display: flex; gap: 6px; flex-wrap: wrap; }
+        .veh-filter-badge {
+          display: flex; align-items: center; gap: 6px;
+          padding: 4px 12px; border-radius: 100px;
+          background: rgba(96,165,250,0.08); border: 0.5px solid rgba(96,165,250,0.2);
+          font-size: 11px; color: ${accent}; font-weight: 600;
+        }
+
         .veh-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
 
-        @media (max-width: 767px) {
-          .veh-container { padding: 24px 16px; }
-          .veh-layout { flex-direction: column; }
-          .veh-sidebar { width: 100%; }
-          .veh-grid { grid-template-columns: 1fr 1fr; }
-          .veh-title { font-size: 26px !important; }
+        /* ── CARD ── */
+        .veh-card {
+          background: #111827;
+          border: 0.5px solid rgba(255,255,255,0.06);
+          border-radius: 16px; overflow: hidden;
+          text-decoration: none; display: block;
+          transition: all 0.25s;
+        }
+        .veh-card:hover {
+          border-color: rgba(96,165,250,0.25);
+          transform: translateY(-3px);
+          box-shadow: 0 12px 32px rgba(0,0,0,0.3);
+        }
+        .veh-card-img {
+          position: relative; aspect-ratio: 4/3;
+          background: #1a2236; overflow: hidden;
+        }
+        .veh-card-img img {
+          width: 100%; height: 100%; object-fit: cover;
+          display: block; transition: transform 0.5s ease;
+        }
+        .veh-card:hover .veh-card-img img { transform: scale(1.04); }
+        .veh-card-img::after {
+          content: ''; position: absolute; inset: 0;
+          background: linear-gradient(to top, rgba(10,15,26,0.8) 0%, transparent 50%);
+        }
+        .veh-card-img-placeholder {
+          width: 100%; height: 100%;
+          display: flex; align-items: center; justify-content: center;
+          font-size: 40px; color: rgba(255,255,255,0.08);
+        }
+        .veh-card-type {
+          position: absolute; top: 12px; left: 12px; z-index: 2;
+          padding: 4px 10px; border-radius: 100px;
+          background: rgba(96,165,250,0.15); color: ${accent};
+          font-size: 10px; font-weight: 700; letter-spacing: 0.08em;
+          text-transform: uppercase;
+          border: 0.5px solid rgba(96,165,250,0.25);
+        }
+        .veh-card-status-ok {
+          position: absolute; top: 12px; right: 12px; z-index: 2;
+          padding: 4px 10px; border-radius: 100px;
+          background: rgba(34,211,165,0.15); color: #22d3a5;
+          font-size: 10px; font-weight: 700;
+          border: 0.5px solid rgba(34,211,165,0.25);
+        }
+        .veh-card-status-no {
+          position: absolute; top: 12px; right: 12px; z-index: 2;
+          padding: 4px 10px; border-radius: 100px;
+          background: rgba(239,68,68,0.15); color: #f87171;
+          font-size: 10px; font-weight: 700;
+          border: 0.5px solid rgba(239,68,68,0.25);
+        }
+        .veh-card-city {
+          position: absolute; bottom: 10px; left: 12px; z-index: 2;
+          font-size: 11px; color: rgba(255,255,255,0.7);
+        }
+        .veh-card-body { padding: 16px; }
+        .veh-card-title {
+          font-size: 14px; font-weight: 600; color: #fff;
+          margin-bottom: 4px; letter-spacing: -0.3px;
+          white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .veh-card-sub {
+          font-size: 12px; color: rgba(255,255,255,0.3); margin-bottom: 14px;
+        }
+        .veh-card-footer {
+          display: flex; align-items: center; justify-content: space-between;
+          padding-top: 12px; border-top: 0.5px solid rgba(255,255,255,0.05);
+        }
+        .veh-card-price {
+          font-size: 15px; font-weight: 700; color: ${accent};
+          letter-spacing: -0.5px;
+        }
+        .veh-card-price span { font-size: 11px; color: rgba(255,255,255,0.25); font-weight: 400; }
+        .veh-card-arrow {
+          width: 28px; height: 28px; border-radius: 50%;
+          background: rgba(96,165,250,0.08); border: 0.5px solid rgba(96,165,250,0.2);
+          display: flex; align-items: center; justify-content: center;
+          font-size: 12px; color: ${accent}; transition: all 0.2s;
+        }
+        .veh-card:hover .veh-card-arrow { background: ${accent}; color: #0a1428; }
+
+        /* ── EMPTY ── */
+        .veh-empty {
+          text-align: center; padding: 80px 20px;
+          background: #111827; border: 0.5px solid rgba(255,255,255,0.06);
+          border-radius: 20px;
         }
 
-        @media (max-width: 480px) {
+        /* ── PAGINATION ── */
+        .veh-pagination { display: flex; justify-content: center; gap: 6px; margin-top: 40px; flex-wrap: wrap; }
+        .veh-page {
+          width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
+          border-radius: 10px; font-size: 13px; text-decoration: none; transition: all 0.2s;
+          border: 0.5px solid rgba(255,255,255,0.07);
+        }
+        .veh-page-active { background: ${accent}; color: #0a1428; border-color: ${accent}; font-weight: 700; }
+        .veh-page-inactive { background: rgba(255,255,255,0.04); color: rgba(255,255,255,0.4); }
+        .veh-page-inactive:hover { background: rgba(255,255,255,0.08); color: #fff; }
+
+        /* ── RESPONSIVE ── */
+        @media (max-width: 767px) {
+          .veh-hero-inner { padding: 0 16px 32px; }
+          .veh-container { padding: 20px 16px 60px; }
+          .veh-layout { flex-direction: column; }
+          .veh-sidebar { width: 100%; position: static; }
+          .veh-grid { grid-template-columns: 1fr 1fr; gap: 12px; }
+          .veh-hero-h1 { font-size: 24px; }
+        }
+        @media (max-width: 420px) {
           .veh-grid { grid-template-columns: 1fr; }
         }
-
         @media (min-width: 768px) and (max-width: 1023px) {
-          .veh-container { padding: 32px 24px; }
+          .veh-hero-inner { padding: 0 20px 32px; }
+          .veh-container { padding: 24px 20px 60px; }
           .veh-sidebar { width: 200px; }
           .veh-grid { grid-template-columns: repeat(2, 1fr); }
         }
       `}</style>
 
-      <div style={{ background: '#0a0f1a', minHeight: '100vh' }}>
+      <div className="veh">
         <Navbar />
+
+        {/* ── HERO ── */}
+        <div className="veh-hero">
+          {/* Image de fond */}
+          <div className="veh-hero-bg" />
+          {/* Overlay couleur */}
+          <div className="veh-hero-overlay" />
+          {/* Fondu bas */}
+          <div className="veh-hero-overlay-bottom" />
+
+          <div className="veh-hero-inner">
+            <div className="veh-breadcrumb">
+              <Link href="/">Accueil</Link>
+              <span>›</span>
+              <span>Véhicules</span>
+            </div>
+
+            <div className="veh-hero-label">Location</div>
+            <h1 className="veh-hero-h1">Véhicules disponibles</h1>
+            <p className="veh-hero-count">
+              <strong>{count ?? 0}</strong> véhicule{(count ?? 0) > 1 ? 's' : ''} en Côte d&apos;Ivoire
+            </p>
+
+            {/* Type tabs */}
+            <div className="veh-tabs">
+              <Link href="/vehicles" className={`veh-tab ${!params.type ? 'veh-tab-all' : 'veh-tab-inactive'}`}>
+                Tous
+              </Link>
+              {TYPES.map(t => (
+                <Link
+                  key={t}
+                  href={`/vehicles?type=${t}${params.city ? `&city=${params.city}` : ''}${params.min ? `&min=${params.min}` : ''}${params.max ? `&max=${params.max}` : ''}`}
+                  className={`veh-tab ${params.type === t ? 'veh-tab-active' : 'veh-tab-inactive'}`}
+                >
+                  {t}
+                </Link>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* ── BODY ── */}
         <div className="veh-container">
-
-          {/* Header */}
-          <div style={{ marginBottom: 40 }}>
-            <div style={{ fontSize: 11, color: '#60a5fa', textTransform: 'uppercase', letterSpacing: 2, fontWeight: 600, marginBottom: 8 }}>Location</div>
-            <h1 className="veh-title" style={{ fontSize: 36, fontWeight: 800, color: '#fff', letterSpacing: -1, marginBottom: 6 }}>Véhicules disponibles</h1>
-            <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.35)' }}>{count ?? 0} véhicules en Côte d&apos;Ivoire</p>
-          </div>
-
-          {/* Filtres rapides */}
-          <div style={{ display: 'flex', gap: 8, marginBottom: 32, flexWrap: 'wrap' }}>
-            <Link href="/vehicles" style={{ padding: '7px 16px', borderRadius: 20, fontSize: 12, fontWeight: 600, textDecoration: 'none', background: !params.type ? '#60a5fa' : 'rgba(255,255,255,0.05)', color: !params.type ? '#0a1428' : 'rgba(255,255,255,0.5)', border: '0.5px solid rgba(255,255,255,0.1)' }}>Tous</Link>
-            {TYPES.map(t => (
-              <Link key={t} href={`/vehicles?type=${t}`} style={{ padding: '7px 16px', borderRadius: 20, fontSize: 12, fontWeight: 600, textDecoration: 'none', textTransform: 'uppercase', background: params.type === t ? '#60a5fa' : 'rgba(255,255,255,0.05)', color: params.type === t ? '#0a1428' : 'rgba(255,255,255,0.5)', border: '0.5px solid rgba(255,255,255,0.1)' }}>{t}</Link>
-            ))}
-          </div>
-
           <div className="veh-layout">
-            {/* Sidebar */}
+
+            {/* ── SIDEBAR ── */}
             <aside className="veh-sidebar">
-              <details>
-                <summary style={{ display: 'block', padding: '10px 0', background: 'none', border: 'none', color: '#fff', fontSize: 13, cursor: 'pointer', listStyle: 'none', marginBottom: 16 }}>
-                  <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11, textTransform: 'uppercase', letterSpacing: 1, fontWeight: 600 }}>🔍 Filtres</span>
-                </summary>
+              <div className="veh-sidebar-box">
+                <div className="veh-sidebar-title">🔍 Filtres</div>
                 <form>
-                  <label style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: 1, fontWeight: 600, marginBottom: 8, display: 'block' }}>Ville</label>
-                  <select name="city" defaultValue={params.city ?? ''} style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '0.5px solid rgba(255,255,255,0.1)', borderRadius: 10, padding: '10px 12px', fontSize: 13, color: '#fff', marginBottom: 16, outline: 'none', colorScheme: 'dark' }}>
-                    <option value="">Toutes les villes</option>
-                    {CITIES.map(c => <option key={c} value={c}>{c}</option>)}
-                  </select>
+                  <div className="veh-field">
+                    <label className="veh-label">Ville</label>
+                    <select name="city" defaultValue={params.city ?? ''} className="veh-select">
+                      <option value="">Toutes les villes</option>
+                      {CITIES.map(c => <option key={c} value={c}>{c}</option>)}
+                    </select>
+                  </div>
 
-                  <label style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: 1, fontWeight: 600, marginBottom: 8, display: 'block' }}>Transmission</label>
-                  <select name="transmission" defaultValue={params.transmission ?? ''} style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '0.5px solid rgba(255,255,255,0.1)', borderRadius: 10, padding: '10px 12px', fontSize: 13, color: '#fff', marginBottom: 16, outline: 'none', colorScheme: 'dark' }}>
-                    <option value="">Toutes</option>
-                    <option value="automatique">Automatique</option>
-                    <option value="manuelle">Manuelle</option>
-                  </select>
+                  <div className="veh-field">
+                    <label className="veh-label">Transmission</label>
+                    <select name="transmission" defaultValue={params.transmission ?? ''} className="veh-select">
+                      <option value="">Toutes</option>
+                      <option value="automatique">Automatique</option>
+                      <option value="manuelle">Manuelle</option>
+                    </select>
+                  </div>
 
-                  <label style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: 1, fontWeight: 600, marginBottom: 8, display: 'block' }}>Prix / jour (FCFA)</label>
-                  <input type="number" name="min" defaultValue={params.min ?? ''} placeholder="Min" style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '0.5px solid rgba(255,255,255,0.1)', borderRadius: 10, padding: '10px 12px', fontSize: 13, color: '#fff', marginBottom: 8, outline: 'none', colorScheme: 'dark', boxSizing: 'border-box' }} />
-                  <input type="number" name="max" defaultValue={params.max ?? ''} placeholder="Max" style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '0.5px solid rgba(255,255,255,0.1)', borderRadius: 10, padding: '10px 12px', fontSize: 13, color: '#fff', marginBottom: 16, outline: 'none', colorScheme: 'dark', boxSizing: 'border-box' }} />
+                  <div className="veh-field">
+                    <label className="veh-label">Prix / jour (FCFA)</label>
+                    <div className="veh-price-row">
+                      <input type="number" name="min" defaultValue={params.min ?? ''} placeholder="Min" className="veh-input" />
+                      <input type="number" name="max" defaultValue={params.max ?? ''} placeholder="Max" className="veh-input" />
+                    </div>
+                  </div>
 
                   {params.type && <input type="hidden" name="type" value={params.type} />}
 
-                  <button type="submit" style={{ width: '100%', padding: 11, background: '#60a5fa', color: '#0a1428', borderRadius: 10, border: 'none', fontSize: 13, fontWeight: 700, cursor: 'pointer', marginBottom: 10 }}>Appliquer</button>
-                  <Link href="/vehicles" style={{ display: 'block', textAlign: 'center', fontSize: 12, color: 'rgba(255,255,255,0.3)', textDecoration: 'none' }}>Réinitialiser</Link>
+                  <div className="veh-divider" />
+                  <button type="submit" className="veh-apply">Appliquer les filtres</button>
+                  <Link href="/vehicles" className="veh-reset">Réinitialiser</Link>
                 </form>
-              </details>
+              </div>
             </aside>
 
-            {/* Grille */}
-            <div style={{ flex: 1, minWidth: 0 }}>
+            {/* ── MAIN ── */}
+            <div className="veh-main">
+
+              {/* Results bar */}
+              <div className="veh-results-bar">
+                <span className="veh-results-text">
+                  {count ?? 0} véhicule{(count ?? 0) > 1 ? 's' : ''} trouvé{(count ?? 0) > 1 ? 's' : ''}
+                </span>
+                <div className="veh-active-filters">
+                  {params.city && <span className="veh-filter-badge">{params.city}</span>}
+                  {params.type && <span className="veh-filter-badge">{params.type.toUpperCase()}</span>}
+                  {params.transmission && <span className="veh-filter-badge">{params.transmission}</span>}
+                  {(params.min || params.max) && <span className="veh-filter-badge">{params.min ? formatPrice(Number(params.min)) : '0'} — {params.max ? formatPrice(Number(params.max)) : '∞'}</span>}
+                </div>
+              </div>
+
               {vehicles && vehicles.length > 0 ? (
                 <>
                   <div className="veh-grid">
                     {vehicles.map(v => (
-                      <Link key={v.id} href={`/vehicles/${v.id}`} style={{ background: '#111827', border: '0.5px solid rgba(255,255,255,0.08)', borderRadius: 16, overflow: 'hidden', textDecoration: 'none', display: 'block' }}>
-                        <div style={{ aspectRatio: '4/3', background: '#1a2236', overflow: 'hidden', position: 'relative' }}>
-                          {v.main_photo ? (
-                            <img src={v.main_photo} alt={v.title} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-                          ) : (
-                            <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 40, color: 'rgba(255,255,255,0.1)' }}>◈</div>
-                          )}
-                          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(10,15,26,0.8) 0%, transparent 50%)' }} />
-                          <span style={{ position: 'absolute', top: 12, left: 12, background: 'rgba(96,165,250,0.15)', color: '#60a5fa', fontSize: 11, fontWeight: 600, padding: '4px 10px', borderRadius: 20, border: '0.5px solid rgba(96,165,250,0.25)', textTransform: 'uppercase' }}>{v.type}</span>
-                          <span style={{ position: 'absolute', top: 12, right: 12, background: v.is_available ? 'rgba(34,211,165,0.15)' : 'rgba(239,68,68,0.15)', color: v.is_available ? '#22d3a5' : '#f87171', fontSize: 11, fontWeight: 600, padding: '4px 10px', borderRadius: 20, border: `0.5px solid ${v.is_available ? 'rgba(34,211,165,0.25)' : 'rgba(239,68,68,0.25)'}` }}>{v.is_available ? 'Dispo' : 'Loué'}</span>
-                          <div style={{ position: 'absolute', bottom: 12, left: 12 }}>
-                            <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', margin: 0 }}>{v.city}</p>
-                          </div>
+                      <Link key={v.id} href={`/vehicles/${v.id}`} className="veh-card">
+                        <div className="veh-card-img">
+                          {v.main_photo
+                            ? <img src={v.main_photo} alt={`${v.brand} ${v.model}`} />
+                            : <div className="veh-card-img-placeholder">◈</div>
+                          }
+                          <span className="veh-card-type">{v.type}</span>
+                          <span className={v.is_available ? 'veh-card-status-ok' : 'veh-card-status-no'}>
+                            {v.is_available ? 'Dispo' : 'Loué'}
+                          </span>
+                          <span className="veh-card-city">{v.city}</span>
                         </div>
-                        <div style={{ padding: 16 }}>
-                          <p style={{ fontSize: 14, fontWeight: 600, color: '#fff', marginBottom: 4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{v.brand} {v.model}</p>
-                          <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', marginBottom: 10 }}>{v.year} · {v.transmission} · {v.seats} places</p>
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                            <p style={{ fontSize: 15, fontWeight: 700, color: '#60a5fa' }}>
-                              {formatPrice(v.price_per_day)}<span style={{ fontSize: 11, fontWeight: 400, color: 'rgba(255,255,255,0.3)' }}> / jour</span>
-                            </p>
-                            <span style={{ fontSize: 12, color: '#60a5fa' }}>→</span>
+                        <div className="veh-card-body">
+                          <p className="veh-card-title">{v.brand} {v.model}</p>
+                          <p className="veh-card-sub">{v.year} · {v.transmission} · {v.seats} places</p>
+                          <div className="veh-card-footer">
+                            <div className="veh-card-price">
+                              {formatPrice(v.price_per_day)}<span> / jour</span>
+                            </div>
+                            <div className="veh-card-arrow">→</div>
                           </div>
                         </div>
                       </Link>
@@ -153,19 +479,27 @@ export default async function VehiclesPage({
                   </div>
 
                   {totalPages > 1 && (
-                    <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 40, flexWrap: 'wrap' }}>
+                    <div className="veh-pagination">
+                      {page > 1 && (
+                        <Link href={`/vehicles?${new URLSearchParams({ ...params, page: String(page - 1) })}`} className="veh-page veh-page-inactive">←</Link>
+                      )}
                       {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
-                        <Link key={p} href={`/vehicles?${new URLSearchParams({ ...params, page: String(p) })}`} style={{ width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 10, fontSize: 13, textDecoration: 'none', background: p === page ? '#60a5fa' : 'rgba(255,255,255,0.05)', color: p === page ? '#0a1428' : 'rgba(255,255,255,0.5)', border: '0.5px solid rgba(255,255,255,0.08)', fontWeight: p === page ? 700 : 400 }}>{p}</Link>
+                        <Link key={p} href={`/vehicles?${new URLSearchParams({ ...params, page: String(p) })}`} className={`veh-page ${p === page ? 'veh-page-active' : 'veh-page-inactive'}`}>{p}</Link>
                       ))}
+                      {page < totalPages && (
+                        <Link href={`/vehicles?${new URLSearchParams({ ...params, page: String(page + 1) })}`} className="veh-page veh-page-inactive">→</Link>
+                      )}
                     </div>
                   )}
                 </>
               ) : (
-                <div style={{ textAlign: 'center', padding: '80px 20px' }}>
-                  <div style={{ fontSize: 48, color: 'rgba(255,255,255,0.08)', marginBottom: 16 }}>◈</div>
-                  <p style={{ fontSize: 16, fontWeight: 600, color: 'rgba(255,255,255,0.4)', marginBottom: 8 }}>Aucun véhicule trouvé</p>
-                  <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.2)' }}>Essayez de modifier vos filtres</p>
-                  <Link href="/vehicles" style={{ display: 'inline-block', marginTop: 20, fontSize: 13, color: '#60a5fa', textDecoration: 'none' }}>Voir tous les véhicules</Link>
+                <div className="veh-empty">
+                  <div style={{ fontSize: 52, color: 'rgba(255,255,255,0.06)', marginBottom: 20 }}>◈</div>
+                  <p style={{ fontSize: 18, fontWeight: 600, color: 'rgba(255,255,255,0.4)', marginBottom: 8 }}>Aucun véhicule trouvé</p>
+                  <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.2)', marginBottom: 24 }}>Essayez de modifier vos filtres de recherche</p>
+                  <Link href="/vehicles" style={{ display: 'inline-block', padding: '10px 24px', background: 'rgba(96,165,250,0.1)', color: '#60a5fa', borderRadius: 100, fontSize: 13, fontWeight: 600, textDecoration: 'none', border: '0.5px solid rgba(96,165,250,0.25)' }}>
+                    Voir tous les véhicules
+                  </Link>
                 </div>
               )}
             </div>

@@ -4,21 +4,21 @@ import Navbar from '@/components/layout/Navbar'
 import { formatPrice } from '@/lib/utils'
 
 const CATEGORIES = [
-  { value: 'all',          label: 'Tout',         emoji: '🏠' },
-  { value: 'mode',         label: 'Mode',          emoji: '👗' },
-  { value: 'electronique', label: 'Électronique',  emoji: '📱' },
-  { value: 'alimentaire',  label: 'Alimentation',  emoji: '🍽️' },
-  { value: 'beaute',       label: 'Beauté',         emoji: '💄' },
-  { value: 'maison',       label: 'Maison',         emoji: '🏡' },
-  { value: 'service',      label: 'Services',       emoji: '⚙️' },
-  { value: 'sport',        label: 'Sport',          emoji: '⚽' },
-  { value: 'autre',        label: 'Autre',          emoji: '📦' },
+  { value: 'all',          label: 'Tout',         emoji: '' },
+  { value: 'mode',         label: 'Mode',          emoji: '' },
+  { value: 'electronique', label: 'Électronique',  emoji: '' },
+  { value: 'alimentaire',  label: 'Alimentation',  emoji: '' },
+  { value: 'beaute',       label: 'Beauté',         emoji: '' },
+  { value: 'maison',       label: 'Maison',         emoji: '' },
+  { value: 'service',      label: 'Services',       emoji: '' },
+  { value: 'sport',        label: 'Sport',          emoji: '' },
+  { value: 'autre',        label: 'Autre',          emoji: '' },
 ]
 
 const BANNERS = [
-  { bg: 'linear-gradient(120deg,#FF6B00,#FF9240)', label: 'PROMO DU JOUR',  title: "Jusqu'à -50%\nsur la mode",     sub: 'Offres limitées',   emoji: '👗' },
-  { bg: 'linear-gradient(120deg,#00897B,#00BCD4)', label: 'NOUVEAUTÉ',      title: 'Tech & Gadgets\narrivée fraîche', sub: 'Livraison express', emoji: '📱' },
-  { bg: 'linear-gradient(120deg,#7B1FA2,#E040FB)', label: 'EXCLUSIF',        title: 'Beauté premium\nprix imbattable', sub: 'Vendeurs vérifiés', emoji: '💄' },
+  { bg: 'linear-gradient(120deg,#FF6B00,#FF9240)', label: 'PROMO DU JOUR',  title: "Jusqu'à -50%\nsur la mode",     sub: 'Offres limitées',   emoji: '' },
+  { bg: 'linear-gradient(120deg,#00897B,#00BCD4)', label: 'NOUVEAUTÉ',      title: 'Tech & Gadgets\narrivée fraîche', sub: 'Livraison express', emoji: '' },
+  { bg: 'linear-gradient(120deg,#7B1FA2,#E040FB)', label: 'EXCLUSIF',        title: 'Beauté premium\nprix imbattable', sub: 'Vendeurs vérifiés', emoji: '' },
 ]
 
 export default async function BoutiquePage({
@@ -196,7 +196,7 @@ export default async function BoutiquePage({
             <form method="GET" action="/boutique">
               <input className="bl-search-in" name="q" defaultValue={q} placeholder="Rechercher un produit…" />
               {category !== 'all' && <input type="hidden" name="category" value={category} />}
-              <button type="submit" className="bl-search-btn">🔍</button>
+              <button type="submit" className="bl-search-btn"></button>
             </form>
           </div>
           <div className="bl-topbar-right">
@@ -244,7 +244,7 @@ export default async function BoutiquePage({
         {!q && flash.length > 0 && (
           <>
             <div className="bl-sec">
-              <div className="bl-sec-title">⚡ Ventes flash <span className="bl-sec-pill">{flash.length}</span></div>
+              <div className="bl-sec-title"> Ventes flash <span className="bl-sec-pill">{flash.length}</span></div>
               <Link href="/boutique" className="bl-sec-all">Voir tout →</Link>
             </div>
             <div className="bl-flash-strip">
@@ -253,7 +253,7 @@ export default async function BoutiquePage({
                 const photo    = p.photos?.[0] || p.main_photo
                 return (
                   <Link key={p.id} href={`/boutique/produit/${p.id}`} className="bl-flash-card">
-                    {photo ? <img src={photo} alt={p.name} className="bl-flash-img" /> : <div className="bl-flash-img-ph">📦</div>}
+                    {photo ? <img src={photo} alt={p.name} className="bl-flash-img" /> : <div className="bl-flash-img-ph"></div>}
                     <div className="bl-flash-body">
                       <div className="bl-flash-name">{p.name}</div>
                       <span className="bl-flash-price">{formatPrice(p.price)}</span>
@@ -271,7 +271,7 @@ export default async function BoutiquePage({
         {!q && category === 'all' && (
           <div className="bl-mid-banner">
             <div>
-              <div className="bl-mid-title">🏪 Ouvrez votre boutique</div>
+              <div className="bl-mid-title">Ouvrez votre boutique</div>
               <div className="bl-mid-sub">Rejoignez {totalShops ?? 0}+ vendeurs — gratuit</div>
             </div>
             <Link href="/publier/boutique" className="bl-mid-btn">Commencer</Link>
@@ -281,7 +281,7 @@ export default async function BoutiquePage({
         {/* PRODUITS */}
         <div className="bl-sec">
           <div className="bl-sec-title">
-            {q ? `🔍 "${q}"` : category !== 'all' ? `${CATEGORIES.find(c => c.value === category)?.emoji} ${CATEGORIES.find(c => c.value === category)?.label}` : '🛍️ Tous les produits'}
+            {q ? ` "${q}"` : category !== 'all' ? `${CATEGORIES.find(c => c.value === category)?.emoji} ${CATEGORIES.find(c => c.value === category)?.label}` : ' Tous les produits'}
             <span className="bl-sec-pill">{products.length}</span>
           </div>
         </div>
@@ -299,7 +299,7 @@ export default async function BoutiquePage({
                     <div className="bl-card-img-wrap">
                       {photo ? <img src={photo} alt={p.name} className="bl-card-img" /> : <div className="bl-card-ph">📦</div>}
                       {hasDiscount && <span className="bl-bdiscount">-{discount}%</span>}
-                      {p.delivery_available && !isService && <span className="bl-bdelivery">🚚 Livraison</span>}
+                      {p.delivery_available && !isService && <span className="bl-bdelivery">Livraison</span>}
                       {isService && <span className="bl-bservice">SERVICE</span>}
                     </div>
                     <div className="bl-card-body">
@@ -336,20 +336,20 @@ export default async function BoutiquePage({
         {/* BOTTOM NAV */}
         <nav className="bl-bottom-nav">
           <Link href="/boutique" className={`bl-bnav-item${!q && category === 'all' ? ' active' : ''}`}>
-            <span className="bl-bnav-ico">🏠</span>Accueil
+            <span className="bl-bnav-ico"></span>Accueil
           </Link>
           <Link href="/boutique?category=mode" className={`bl-bnav-item${category === 'mode' ? ' active' : ''}`}>
-            <span className="bl-bnav-ico">👗</span>Mode
+            <span className="bl-bnav-ico"></span>Mode
           </Link>
           <Link href="/boutique" className="bl-bnav-item">
-            <div className="bl-bnav-fab">🛍️</div>
+            <div className="bl-bnav-fab"></div>
             <span className="bl-bnav-fab-lbl">Boutique</span>
           </Link>
           <Link href="/boutique?category=electronique" className={`bl-bnav-item${category === 'electronique' ? ' active' : ''}`}>
-            <span className="bl-bnav-ico">📱</span>Tech
+            <span className="bl-bnav-ico"></span>Tech
           </Link>
           <Link href="/publier/boutique" className="bl-bnav-item">
-            <span className="bl-bnav-ico">➕</span>Vendre
+            <span className="bl-bnav-ico"></span>Vendre
           </Link>
         </nav>
       </div>
