@@ -53,6 +53,9 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
   const isPast = new Date(event.event_date) < new Date()
   const fillRate = Math.min(100, Math.round((event.tickets_sold / event.total_capacity) * 100))
 
+  const organizer = event.profiles as { full_name?: string; phone?: string } | null
+  const organizerPhone = organizer?.phone ?? null
+
   const accent = '#a78bfa'
 
   return (
@@ -98,7 +101,7 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
             <div className="ed-hero-badges">
               <span style={{ background: 'rgba(167,139,250,0.2)', color: accent, border: '0.5px solid rgba(167,139,250,0.3)', fontSize: 11, fontWeight: 600, padding: '5px 14px', borderRadius: 20, textTransform: 'capitalize' }}>{event.category}</span>
               {isSoldOut && <span style={{ background: 'rgba(248,113,113,0.2)', color: '#f87171', border: '0.5px solid rgba(248,113,113,0.3)', fontSize: 11, fontWeight: 600, padding: '5px 14px', borderRadius: 20 }}>Complet</span>}
-              {isPast && <span style={{ background: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.5)', border: '0.5px solid rgba(255,255,255,0.15)', fontSize: 11, fontWeight: 600, padding: '5px 14px', borderRadius: 20 }}>Terminé</span>}
+              {isPast && <span style={{ background: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.5)', border: '0.5px solid rgba(255,255,255,0.15)', fontSize: 11, fontWeight: 600, padding: '5px 14px', borderRadius: 20 }}>{"Terminé"}</span>}
               {!isSoldOut && !isPast && <span style={{ background: 'rgba(34,211,165,0.15)', color: '#22d3a5', border: '0.5px solid rgba(34,211,165,0.25)', fontSize: 11, fontWeight: 600, padding: '5px 14px', borderRadius: 20 }}>{remaining} billet{remaining > 1 ? 's' : ''} disponible{remaining > 1 ? 's' : ''}</span>}
             </div>
 
@@ -142,20 +145,20 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
 
               {event.description && (
                 <div style={{ background: '#111827', border: '0.5px solid rgba(255,255,255,0.08)', borderRadius: 16, padding: '24px' }}>
-                  <h2 style={{ fontSize: 15, fontWeight: 700, color: '#fff', marginBottom: 14 }}>À propos</h2>
+                  <h2 style={{ fontSize: 15, fontWeight: 700, color: '#fff', marginBottom: 14 }}>{"À propos"}</h2>
                   <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.55)', lineHeight: 1.8, whiteSpace: 'pre-line' }}>{event.description}</p>
                 </div>
               )}
 
               <div style={{ background: '#111827', border: '0.5px solid rgba(255,255,255,0.08)', borderRadius: 16, padding: '24px' }}>
-                <h2 style={{ fontSize: 15, fontWeight: 700, color: '#fff', marginBottom: 16 }}>Organisé par</h2>
+                <h2 style={{ fontSize: 15, fontWeight: 700, color: '#fff', marginBottom: 16 }}>{"Organisé par"}</h2>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
                   <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'rgba(167,139,250,0.15)', border: '0.5px solid rgba(167,139,250,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, color: accent, flexShrink: 0 }}>
-                    {(event.profiles as { full_name: string })?.full_name?.slice(0, 2).toUpperCase()}
+                    {organizer?.full_name?.slice(0, 2).toUpperCase()}
                   </div>
                   <div>
-                    <p style={{ fontSize: 14, fontWeight: 600, color: '#fff' }}>{(event.profiles as { full_name: string })?.full_name}</p>
-                    <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', marginTop: 2 }}>Organisateur vérifié</p>
+                    <p style={{ fontSize: 14, fontWeight: 600, color: '#fff' }}>{organizer?.full_name}</p>
+                    <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', marginTop: 2 }}>{"Organisateur vérifié"}</p>
                   </div>
                 </div>
               </div>
@@ -167,7 +170,7 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
                   <p style={{ fontSize: 32, fontWeight: 800, color: '#fff', letterSpacing: -1 }}>
                     {event.price_per_ticket === 0 ? 'Gratuit' : formatPrice(event.price_per_ticket)}
                   </p>
-                  {event.price_per_ticket > 0 && <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.35)', marginTop: 2 }}>par billet</p>}
+                  {event.price_per_ticket > 0 && <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.35)', marginTop: 2 }}>{"par billet"}</p>}
                 </div>
 
                 <div style={{ marginBottom: 24 }}>
@@ -180,7 +183,14 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
                   </div>
                 </div>
 
-                <BookingFormEvent event={event} remaining={remaining} isLoggedIn={!!user} isPast={isPast} />
+                <BookingFormEvent
+                  event={event}
+                  remaining={remaining}
+                  isLoggedIn={!!user}
+                  isPast={isPast}
+                  organizerPhone={organizerPhone}
+                  organizerWhatsapp={null}
+                />
               </div>
             </div>
           </div>

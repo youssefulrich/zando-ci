@@ -20,7 +20,7 @@ export default function Navbar() {
     supabase.auth.getUser().then(({ data }) => setUser(data.user))
     const handleScroll = () => setScrolled(window.scrollY > 10)
     window.addEventListener('scroll', handleScroll)
-    return () => window.removeEventListener('scroll', handleScroll)
+    return () => window.removeEventListener('scroll', handleScroll) 
   }, [])
 
   async function handleLogout() {
@@ -33,7 +33,7 @@ export default function Navbar() {
     { href: '/residences', label: 'Résidences', accent: '#22d3a5' },
     { href: '/vehicles', label: 'Véhicules', accent: '#60a5fa' },
     { href: '/events', label: 'Événements', accent: '#a78bfa' },
-    { href: '/boutique', label: 'Boutique', accent: '#22d3a5' },
+    { href: '/boutique', label: 'Boutique', accent: '  #f87171' },
   ]
 
   return (
@@ -119,7 +119,7 @@ export default function Navbar() {
         .znb-mobile-link span.dot {
           width: 6px; height: 6px; border-radius: 50%; display: inline-block;
         }
-        .znb-mobile-actions { display: flex; gap: 10px; margin-top: 20px; }
+        .znb-mobile-actions { display: flex; gap: 10px; margin-top: 20px; } 
 
         @media (max-width: 767px) {
           .znb-nav, .znb-actions { display: none !important; }
