@@ -32,7 +32,7 @@ export default async function ResidencesPage({
   const { data: residences, count } = await query
   const totalPages = Math.ceil((count ?? 0) / pageSize)
 
-  const CITIES = ['Abidjan', 'Bouaké', 'Daloa', 'Yamoussoukro', 'San-Pédro', 'Korhogo']
+  const CITIES = ['Abidjan', 'Bouaké', 'Daloa', 'Yamoussoukro', 'San-Pédro', 'Korhogo','Bassam','Assinie']
   const TYPES = [
     { value: 'villa', label: ' Villa' },
     { value: 'appartement', label: ' Appartement' },
