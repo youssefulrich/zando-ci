@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import Navbar from '@/components/layout/Navbar'
 import { createClient } from '@/lib/supabase/client'
 
-const CITIES = ['Abidjan', 'Bouaké', 'Daloa', 'Yamoussoukro', 'San-Pédro', 'Korhogo', 'Man', 'Divo', 'Gagnoa', 'Abengourou']
+const CITIES = ['Abidjan', 'Bouaké', 'Daloa', 'Yamoussoukro', 'San-Pédro', 'Korhogo', 'Man', 'Divo', 'Gagnoa', 'Abengourou','Bassam','Assinie']
 const AMENITIES = [
   { value: 'piscine', label: 'Piscine' }, { value: 'wifi', label: 'WiFi' },
   { value: 'parking', label: 'Parking' }, { value: 'climatisation', label: 'Climatisation' },
