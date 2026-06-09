@@ -16,7 +16,7 @@ const step3Schema = z.object({
   password: z.string().min(6, 'Minimum 6 caractères'),
 })
 
-const CITIES = ['Abidjan', 'Bouaké', 'Daloa', 'Yamoussoukro', 'San-Pédro', 'Korhogo', 'Man', 'Divo', 'Gagnoa', 'Abengourou']
+const CITIES = ['Abidjan', 'Bouaké', 'Daloa', 'Yamoussoukro', 'San-Pédro', 'Korhogo', 'Man', 'Divo', 'Gagnoa', 'Abengourou','Bassam','Assinie']
 const ACCOUNT_TYPES = [
   { value: 'client', label: 'Client', desc: 'Je veux louer', icon: '◎' },
   { value: 'owner_residence', label: 'Propriétaire', desc: 'Je loue des résidences', icon: '⌂' },
